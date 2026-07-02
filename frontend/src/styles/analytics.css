@@ -1,0 +1,428 @@
+/* ===========================
+   ANALYTICS PAGE
+=========================== */
+
+.analytics-page{
+    width:100%;
+    max-width:420px;
+    min-height:100vh;
+
+    margin:0 auto;
+
+    padding:26px 20px 110px;
+
+    background:
+    linear-gradient(
+        180deg,
+        #25145b 0%,
+        #4b2cb8 45%,
+        #7b2ff7 100%
+    );
+
+    color:#fff;
+}
+
+
+/* ===========================
+   HEADER
+=========================== */
+
+.dashboard-header{
+
+    margin-bottom:28px;
+
+}
+
+.top-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:30px;
+
+}
+
+.right-icons{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.icon-btn{
+
+    width:46px;
+
+    height:46px;
+
+    border:none;
+
+    border-radius:16px;
+
+    background:
+    rgba(255,255,255,.08);
+
+    color:white;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    cursor:pointer;
+
+    backdrop-filter:blur(14px);
+
+    font-size:18px;
+
+    transition:.3s;
+
+}
+
+.icon-btn:hover{
+
+    transform:translateY(-3px);
+
+    background:
+    rgba(255,255,255,.14);
+
+}
+
+.profile-image{
+
+    width:52px;
+
+    height:52px;
+
+    border-radius:18px;
+
+    border:2px solid rgba(255,255,255,.25);
+
+}
+
+.header-content{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-end;
+
+    gap:18px;
+
+}
+
+.hello-text{
+
+    font-size:17px;
+
+    opacity:.8;
+
+    margin-bottom:8px;
+
+}
+
+.header-content h1{
+
+    font-size:46px;
+
+    font-weight:800;
+
+    color:white;
+
+    margin:0;
+
+}
+
+.header-content span{
+
+    color:rgba(255,255,255,.75);
+
+    font-size:15px;
+
+}
+
+.date-box{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    font-size:14px;
+
+    color:white;
+
+    opacity:.85;
+
+}
+
+
+/* ===========================
+   KPI GRID
+=========================== */
+
+.stats-grid-v2{
+
+    display:grid;
+
+    grid-template-columns:
+    repeat(2,1fr);
+
+    gap:16px;
+
+    margin-bottom:28px;
+
+}
+
+.stat-card-v2{
+
+    position:relative;
+
+    overflow:hidden;
+
+    padding:22px;
+
+    border-radius:24px;
+
+    border:1px solid rgba(255,255,255,.15);
+
+    background:
+
+    linear-gradient(
+    135deg,
+    rgba(255,255,255,.16),
+    rgba(255,255,255,.05)
+    );
+
+    backdrop-filter:blur(20px);
+
+    box-shadow:
+    0 15px 40px rgba(0,0,0,.25);
+
+    transition:.35s;
+
+}
+
+.stat-card-v2:hover{
+
+    transform:
+    translateY(-6px);
+
+}
+
+.stat-icon{
+
+    width:58px;
+
+    height:58px;
+
+    border-radius:18px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:white;
+
+    font-size:24px;
+
+    margin-bottom:22px;
+
+    box-shadow:
+    0 10px 30px rgba(0,0,0,.3);
+
+}
+
+.stat-card-v2 h2{
+
+    color:white;
+
+    font-size:38px;
+
+    margin-bottom:8px;
+
+}
+
+.stat-card-v2 p{
+
+    color:rgba(255,255,255,.75);
+
+    font-size:16px;
+
+}
+
+.bottom-wave{
+
+    position:absolute;
+
+    left:-10%;
+
+    bottom:-12px;
+
+    width:120%;
+
+    height:45px;
+
+    border-radius:100%;
+
+    opacity:.15;
+
+}
+
+
+/* ===========================
+   DASHBOARD GRID
+=========================== */
+
+.dashboard-row{
+
+    display:grid;
+
+    grid-template-columns:
+    1fr 1fr;
+
+    gap:18px;
+
+    margin-bottom:20px ;
+
+}
+
+.dashboard-card{
+
+    background:
+
+    linear-gradient(
+    135deg,
+    rgba(255,255,255,.13),
+    rgba(255,255,255,.05)
+    );
+
+    border:1px solid rgba(255,255,255,.12);
+
+    border-radius:24px;
+
+    backdrop-filter:blur(20px);
+
+    padding:20px;
+
+    color:white;
+
+    box-shadow:
+    0 18px 45px rgba(0,0,0,.22);
+
+}
+
+.dashboard-card.tall{
+
+    height:300px;
+
+}
+
+.dashboard-card.wide{
+
+    grid-column:span 1;
+
+    height:270px;
+
+}
+
+
+/* ===========================
+   MOBILE
+=========================== */
+
+@media(max-width:420px){
+
+.analytics-page{
+
+padding:22px 16px 110px;
+
+}
+
+.header-content{
+
+flex-direction:column;
+
+align-items:flex-start;
+
+}
+
+.header-content h1{
+
+font-size:40px;
+
+}
+
+}
+
+.dashboard-title{
+
+    font-size:20px;
+
+    font-weight:700;
+
+    color:white;
+
+    margin-bottom:18px;
+
+}
+
+.score-circle{
+
+    width:150px;
+
+    height:150px;
+
+    margin:auto;
+
+    border-radius:50%;
+
+    border:10px solid rgba(255,255,255,.12);
+
+    border-top-color:#2ff77f;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+.score-value{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    color:white;
+
+    font-size:34px;
+
+    font-weight:700;
+
+}
+
+.score-value span{
+
+    font-size:13px;
+
+    color:#d8d8ff;
+
+    margin-top:8px;
+
+}
+
