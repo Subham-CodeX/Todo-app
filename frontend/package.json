@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
     "axios": "^1.16.1",
     "chart.js": "^4.5.1",
     "framer-motion": "^12.40.0",
@@ -20,6 +22,7 @@
     "react-router-dom": "^7.16.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
