@@ -12,6 +12,9 @@ import {
   deleteTask,
 } from "../services/api";
 
+import {
+  scheduleTaskNotification
+} from "../services/notificationService";
 // Create Context
 const TaskContext = createContext();
 
@@ -58,7 +61,7 @@ export const TaskProvider = ({ children }) => {
   // ADD TASK
   // ==========================
 
-  const addTask = async (task) => {
+    const addTask = async (task) => {
     try {
       const newTask =
         await createTask(task);
@@ -67,6 +70,11 @@ export const TaskProvider = ({ children }) => {
         ...prev,
         newTask,
       ]);
+
+      // Schedule notification
+      await scheduleTaskNotification(
+        newTask
+      );
 
       return newTask;
     } catch (error) {

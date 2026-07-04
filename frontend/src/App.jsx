@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 import {
   BrowserRouter,
   Routes,
@@ -8,6 +10,10 @@ import Layout from "./components/Layout";
 
 import Tasks from "./pages/Tasks";
 import Analytics from "./pages/Analytics";
+
+import {
+  requestNotificationPermission,
+} from "./services/notificationService";
 
 function Templates() {
   return (
@@ -26,6 +32,12 @@ function Profile() {
 }
 
 function App() {
+
+  useEffect(() => {
+
+    requestNotificationPermission();
+
+  }, []);
 
   return (
 
