@@ -25,56 +25,92 @@ const getNotificationDate = (
 /**
  * Schedule Notification
  */
-export const scheduleTaskNotification = async (
-  task
-) => {
+export const scheduleTaskNotification = async (task) => {
+
+  console.log("========== Notification ==========");
+
+  console.log("Task:", task);
+
   try {
+
     const notifyAt = getNotificationDate(
       task.date,
       task.startTime
     );
 
-    if (!notifyAt) return;
+    console.log("Date:", task.date);
+    console.log("Start Time:", task.startTime);
+    console.log("notifyAt:", notifyAt);
+    console.log("Current:", new Date());
 
-    if (notifyAt <= new Date()) {
-      console.log("Notification skipped.");
+    if (!notifyAt) {
+
+      console.log("notifyAt is NULL");
+
       return;
+
     }
 
-    // Generate numeric notification id
-    const notificationId = Date.now();
+    if (notifyAt <= new Date()) {
 
-    await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: notificationId,
+      console.log("Time already passed");
 
-          title: "🔔 Task Reminder",
+      return;
 
-          body:
+    }
+
+    const notificationId =
+    task._id
+      ? Math.abs(
+          task._id
+            .split("")
+            .reduce(
+              (a, c) => a + c.charCodeAt(0),
+              0
+            )
+        )
+      : Math.floor(Math.random() * 1000000);
+
+    console.log("Notification ID:", notificationId);
+
+    const result =
+      await LocalNotifications.schedule({
+
+        notifications: [
+
+          {
+
+            id: notificationId,
+
+            title: "Task Reminder",
+
+            body:
             `📌 ${task.title}\n\n` +
             `Priority: ${task.priority}\n` +
             `⏰ ${task.startTime}\n\n` +
             `Your task starts now.`,
 
-          schedule: {
-            at: notifyAt,
+            schedule: {
+
+              at: notifyAt,
+
+            },
+
           },
 
-          smallIcon: "ic_launcher",
+        ],
 
-          extra: {
-            taskId: task._id,
-          },
-        },
-      ],
-    });
+      });
 
-    console.log(
-      "Notification Scheduled:",
-      task.title
-    );
-  } catch (err) {
-    console.error(err);
+    console.log("Schedule Result:", result);
+
+    console.log("Notification Scheduled Successfully");
+
+  } catch (e) {
+
+    console.error("Notification Error");
+
+    console.error(e);
+
   }
 };
