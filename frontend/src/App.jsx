@@ -15,13 +15,8 @@ import {
   requestNotificationPermission,
 } from "./services/notificationService";
 
-function Templates() {
-  return (
-    <div className="coming-soon">
-      Templates Page Coming Soon
-    </div>
-  );
-}
+import Templates from "./pages/Templates";
+
 
 function Profile() {
   return (

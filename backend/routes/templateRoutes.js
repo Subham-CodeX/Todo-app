@@ -3,34 +3,21 @@ const express = require("express");
 const router = express.Router();
 
 const {
-    createTemplate,
-    getTemplates,
-    deleteTemplate,
-    updateTemplate
-} = require("../controllers/templateController");
 
-/* ==========================
-   GET ALL TEMPLATES
-========================== */
+    getTemplates,
+
+    deleteTemplate,
+
+    updateTemplate,
+
+    useTemplate,
+
+} = require("../controllers/taskController");
 
 router.get("/", getTemplates);
-
-/* ==========================
-   CREATE TEMPLATE
-========================== */
-
-router.post("/", createTemplate);
-
-/* ==========================
-   UPDATE TEMPLATE
-========================== */
-
 router.put("/:id", updateTemplate);
-
-/* ==========================
-   DELETE TEMPLATE
-========================== */
-
 router.delete("/:id", deleteTemplate);
+
+router.post("/:id/use", useTemplate);
 
 module.exports = router;

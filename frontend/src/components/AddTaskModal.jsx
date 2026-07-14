@@ -18,6 +18,7 @@ const AddTaskModal = ({
     startTime: "",
     endTime: "",
     completed: false,
+    isTemplate: false,
   };
 
   const [formData, setFormData] =
@@ -193,7 +194,9 @@ const AddTaskModal = ({
 
             <input
               type="checkbox"
-              name="saveTemplate"
+              name="isTemplate"
+              checked={formData.isTemplate}
+              onChange={handleChange}
             />
 
             Save as Template

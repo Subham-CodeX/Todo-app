@@ -9,6 +9,9 @@ import App from "./App.jsx";
 
 import { TaskProvider }
 from "./context/TaskContext";
+import {
+    TemplateProvider,
+} from "./context/TemplateContext";
 
 registerSW({
 
@@ -22,11 +25,15 @@ document.getElementById("root")
 
   <StrictMode>
 
-    <TaskProvider>
+  <TaskProvider>
 
-      <App />
+    <TemplateProvider>
 
-    </TaskProvider>
+        <App />
+
+    </TemplateProvider>
+
+  </TaskProvider>
 
   </StrictMode>
 
