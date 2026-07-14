@@ -156,16 +156,17 @@ exports.deleteTemplate = async (req, res) => {
 
         const { id } = req.params;
 
+        console.log("Delete Template ID:", id);
+
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 message: "Invalid Template ID",
             });
         }
 
-        const template = await Task.findOneAndDelete({
-            _id: id,
-            isTemplate: true,
-        });
+        const template = await Task.findById(id);
+
+        console.log("Template Found:", template);
 
         if (!template) {
             return res.status(404).json({
@@ -173,12 +174,22 @@ exports.deleteTemplate = async (req, res) => {
             });
         }
 
-        res.json({
+        if (!template.isTemplate) {
+            return res.status(400).json({
+                message: "Task is not a template",
+            });
+        }
+
+        await Task.findByIdAndDelete(id);
+
+        return res.json({
             success: true,
-            message: "Template deleted",
+            message: "Template deleted successfully",
         });
 
     } catch (error) {
+
+        console.error(error);
 
         res.status(500).json({
             message: error.message,
@@ -192,27 +203,28 @@ exports.deleteTemplate = async (req, res) => {
 =========================== */
 
 exports.updateTemplate = async (req, res) => {
+
     try {
 
         const { id } = req.params;
 
-        const template = await Task.findOneAndUpdate(
-            {
-                _id: id,
-                isTemplate: true,
-            },
-            req.body,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        const template = await Task.findById(id);
 
         if (!template) {
             return res.status(404).json({
                 message: "Template not found",
             });
         }
+
+        if (!template.isTemplate) {
+            return res.status(400).json({
+                message: "Task is not a template",
+            });
+        }
+
+        Object.assign(template, req.body);
+
+        await template.save();
 
         res.json(template);
 
@@ -223,6 +235,7 @@ exports.updateTemplate = async (req, res) => {
         });
 
     }
+
 };
 
 /* ===========================

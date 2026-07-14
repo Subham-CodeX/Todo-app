@@ -13,6 +13,7 @@ import { useTemplates } from "../context/TemplateContext";
 export default function TemplateCard({ template }) {
   const {
     removeTemplate,
+    openEditModal,
     createFromTemplate,
   } = useTemplates();
 
@@ -95,8 +96,11 @@ export default function TemplateCard({ template }) {
           Use
         </button>
 
-        <button className="icon-btn">
-          <FaPen />
+        <button
+            className="icon-btn"
+            onClick={() => openEditModal(template)}
+        >
+            <FaPen />
         </button>
 
         <button
