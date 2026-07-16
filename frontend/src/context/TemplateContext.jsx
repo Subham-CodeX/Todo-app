@@ -12,8 +12,7 @@ import {
   useTemplate,
 } from "../services/templateApi";
 
-const TemplateContext =
-  createContext();
+const TemplateContext = createContext();
 
 export const useTemplates = () =>
   useContext(TemplateContext);
@@ -34,22 +33,19 @@ export const TemplateProvider = ({
   const loadTemplates =
     async () => {
       try {
-
         setLoading(true);
 
         const data =
           await getTemplates();
 
         setTemplates(data);
-
       } catch (error) {
-
-        console.error(error);
-
+        console.error(
+          "Error loading templates:",
+          error
+        );
       } finally {
-
         setLoading(false);
-
       }
     };
 
@@ -58,43 +54,70 @@ export const TemplateProvider = ({
   }, []);
 
   // ==========================
-  // DELETE
+  // ADD TEMPLATE (NEW)
+  // ==========================
+
+  const addTemplate = (template) => {
+    if (!template) return;
+
+    setTemplates((prev) => [
+      template,
+      ...prev,
+    ]);
+  };
+
+  // ==========================
+  // DELETE TEMPLATE
   // ==========================
 
   const removeTemplate =
     async (id) => {
+      try {
+        await deleteTemplate(id);
 
-      await deleteTemplate(id);
-
-      setTemplates((prev) =>
-        prev.filter(
-          (t) => t._id !== id
-        )
-      );
-
+        setTemplates((prev) =>
+          prev.filter(
+            (t) => t._id !== id
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Error deleting template:",
+          error
+        );
+        throw error;
+      }
     };
 
   // ==========================
-  // UPDATE
+  // UPDATE TEMPLATE
   // ==========================
 
   const editTemplate =
     async (id, data) => {
+      try {
+        const updated =
+          await updateTemplate(
+            id,
+            data
+          );
 
-      const updated =
-        await updateTemplate(
-          id,
-          data
+        setTemplates((prev) =>
+          prev.map((t) =>
+            t._id === id
+              ? updated
+              : t
+          )
         );
 
-      setTemplates((prev) =>
-        prev.map((t) =>
-          t._id === id
-            ? updated
-            : t
-        )
-      );
-
+        return updated;
+      } catch (error) {
+        console.error(
+          "Error updating template:",
+          error
+        );
+        throw error;
+      }
     };
 
   // ==========================
@@ -103,12 +126,18 @@ export const TemplateProvider = ({
 
   const createFromTemplate =
     async (id, date) => {
-
-      return await useTemplate(
-        id,
-        date
-      );
-
+      try {
+        return await useTemplate(
+          id,
+          date
+        );
+      } catch (error) {
+        console.error(
+          "Error creating task from template:",
+          error
+        );
+        throw error;
+      }
     };
 
   return (
@@ -116,7 +145,10 @@ export const TemplateProvider = ({
       value={{
         templates,
         loading,
+
+        // actions
         loadTemplates,
+        addTemplate,
         removeTemplate,
         editTemplate,
         createFromTemplate,

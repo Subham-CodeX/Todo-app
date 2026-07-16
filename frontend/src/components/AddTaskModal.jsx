@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { useTasks } from "../context/TaskContext";
+import { useTemplates } from "../context/TemplateContext";
 
 const AddTaskModal = ({
   isOpen,
@@ -8,6 +9,7 @@ const AddTaskModal = ({
 }) => {
 
   const { addTask } = useTasks();
+  const { addTemplate } = useTemplates();
 
   const initialForm = {
     title: "",
@@ -53,24 +55,30 @@ const AddTaskModal = ({
 
   const handleSubmit = async (e) => {
 
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
+  try {
 
-      await addTask(formData);
+    const newTask = await addTask(formData);
 
-      setFormData(initialForm);
+    if (newTask?.isTemplate) {
 
-      onClose();
-
-    } catch (error) {
-
-      console.error(
-        "Create Task Error:",
-        error
-      );
+      addTemplate(newTask);
 
     }
+
+    setFormData(initialForm);
+
+    onClose();
+
+  } catch (error) {
+
+    console.error(
+      "Create Task Error:",
+      error
+    );
+
+  }
 
   };
 
