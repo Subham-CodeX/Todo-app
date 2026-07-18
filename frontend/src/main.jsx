@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-
+import { Toaster } from "react-hot-toast";
 import { registerSW }
 from "virtual:pwa-register";
 
@@ -30,6 +30,11 @@ document.getElementById("root")
     <TemplateProvider>
 
         <App />
+
+        <Toaster
+        position="top-right"
+        reverseOrder={false}
+    />
 
     </TemplateProvider>
 

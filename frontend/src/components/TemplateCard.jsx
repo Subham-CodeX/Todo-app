@@ -9,25 +9,59 @@ import {
 } from "react-icons/fa";
 
 import { useTemplates } from "../context/TemplateContext";
+import toast from "react-hot-toast";
 
-export default function TemplateCard({ template }) {
+export default function TemplateCard({
+  template,
+  openEditModal,
+}) {
   const {
     removeTemplate,
-    openEditModal,
     createFromTemplate,
   } = useTemplates();
 
   const handleUse = async () => {
-    const today = new Date()
-      .toISOString()
-      .split("T")[0];
+    try {
+      const today = new Date()
+        .toISOString()
+        .split("T")[0];
 
-    await createFromTemplate(
-      template._id,
-      today
-    );
+      await createFromTemplate(
+        template._id,
+        today
+      );
 
-    alert("Task created successfully!");
+      toast.success("Task created successfully!");
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+    "Failed to create task."
+      );
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmDelete =
+      window.confirm(
+        "Delete this template?"
+      );
+
+    if (!confirmDelete) return;
+
+    try {
+      await removeTemplate(template._id);
+
+      toast.success(
+    "Template deleted."
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+    "Unable to delete template."
+      );
+    }
   };
 
   const categoryIcons = {
@@ -40,39 +74,35 @@ export default function TemplateCard({ template }) {
   return (
     <div className="template-card">
 
+      {/* Category Icon */}
+
       <div
-            className={`template-icon ${template.category.toLowerCase()}`}
-        >
+        className={`template-icon ${template.category.toLowerCase()}`}
+      >
+        {categoryIcons[
+          template.category
+        ] || <FaBook />}
+      </div>
 
-            {categoryIcons[template.category]}
-
-        </div>
+      {/* Content */}
 
       <div className="template-content">
 
-        <h3>
-
-        {template.title}
-
-        </h3>
+        <h3>{template.title}</h3>
 
         <small>
-
-            Created from template
-
+          Created from template
         </small>
 
         <p>
-        {template.description ||
+          {template.description ||
             "No description available"}
         </p>
 
         <div className="template-meta">
 
           <span className="category-pill">
-
             {template.category}
-
           </span>
 
           <span
@@ -85,6 +115,8 @@ export default function TemplateCard({ template }) {
 
       </div>
 
+      {/* Buttons */}
+
       <div className="template-buttons">
 
         <button
@@ -92,22 +124,23 @@ export default function TemplateCard({ template }) {
           onClick={handleUse}
         >
           <FaPlay />
-
           Use
         </button>
 
         <button
-            className="icon-btn"
-            onClick={() => openEditModal(template)}
+          className="icon-btn"
+          onClick={() =>
+            openEditModal(template)
+          }
+          title="Edit Template"
         >
-            <FaPen />
+          <FaPen />
         </button>
 
         <button
           className="icon-btn delete"
-          onClick={() =>
-            removeTemplate(template._id)
-          }
+          onClick={handleDelete}
+          title="Delete Template"
         >
           <FaTrash />
         </button>

@@ -3,29 +3,70 @@ import { useMemo, useState } from "react";
 import { useTemplates } from "../context/TemplateContext";
 
 import TemplateCard from "../components/TemplateCard";
+import EditTemplateModal from "../components/EditTemplateModal";
 
 import "../styles/Templates.css";
 
 export default function Templates() {
-    const { templates, loading } = useTemplates();
+    const {
+    templates,
+    loading,
+    editTemplate,
+} = useTemplates();
 
     const [search, setSearch] = useState("");
 
     const [category, setCategory] = useState("All");
 
+    // -----------------------------
+    // Edit Modal State
+    // -----------------------------
+
+    const [selectedTemplate, setSelectedTemplate] =
+        useState(null);
+
+    const [isEditOpen, setIsEditOpen] =
+        useState(false);
+
+    const openEditModal = (template) => {
+        setSelectedTemplate(template);
+        setIsEditOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setSelectedTemplate(null);
+        setIsEditOpen(false);
+    };
+
+    // -----------------------------
+    // Filter Templates
+    // -----------------------------
+
     const filteredTemplates = useMemo(() => {
+
         return templates.filter((template) => {
-            const matchesSearch = template.title
-                .toLowerCase()
-                .includes(search.toLowerCase());
+
+            const matchesSearch =
+                template.title
+                    .toLowerCase()
+                    .includes(search.toLowerCase());
 
             const matchesCategory =
                 category === "All" ||
                 template.category === category;
 
-            return matchesSearch && matchesCategory;
+            return (
+                matchesSearch &&
+                matchesCategory
+            );
+
         });
-    }, [templates, search, category]);
+
+    }, [
+        templates,
+        search,
+        category,
+    ]);
 
     if (loading) {
         return (
@@ -36,95 +77,156 @@ export default function Templates() {
     }
 
     return (
-        <div className="templates-page">
-            <div className="templates-header">
+        <>
+            <div className="templates-page">
 
-            <div>
+                {/* Header */}
 
-                <h1>📋 Templates</h1>
+                <div className="templates-header">
 
-                <p>
-                    Save once. Use forever.
-                </p>
+                    <div>
 
-            </div>
+                        <h1>📋 Templates</h1>
 
-            <div className="template-count">
+                        <p>
+                            Save once. Use forever.
+                        </p>
 
-                <span>{templates.length}</span>
+                    </div>
 
-                <small>Total</small>
+                    <div className="template-count">
 
-            </div>
+                        <span>
+                            {templates.length}
+                        </span>
 
-        </div>
+                        <small>Total</small>
 
-            <div className="search-box">
-                <span>
-                    🔍
-                </span>
-
-                <input
-                    className="template-search"
-                    placeholder="Search templates..."
-                    value={search}
-                    onChange={(e) =>
-                        setSearch(e.target.value)
-                    }
-                />
-            </div>
-
-            <div className="category-tabs">
-                {[
-                    { label: "All", icon: "✨" },
-                    { label: "Work", icon: "💼" },
-                    { label: "Study", icon: "📚" },
-                    { label: "Health", icon: "❤️" },
-                    { label: "Personal", icon: "👤" },
-                ].map((item) => (
-                    <button
-                    key={item.label}
-                    className={
-                        category === item.label
-                        ? "active"
-                        : ""
-                    }
-                    onClick={() =>
-                        setCategory(item.label)
-                    }
-                    >
-                    {item.icon} {item.label}
-                    </button>
-                ))}
-            </div>
-
-            <div className="template-list">
-                {filteredTemplates.length === 0 ? (
-                    <div className="empty-template">
-
-                    <h2>
-
-                        No Templates Yet
-
-                    </h2>
-
-                    <p>
-
-                        Save your first task as a template
-                        and reuse it anytime.
-
-                    </p>
+                    </div>
 
                 </div>
-                ) : (
-                    filteredTemplates.map((template) => (
-                        <TemplateCard
-                            key={template._id}
-                            template={template}
-                        />
-                    ))
-                )}
+
+                {/* Search */}
+
+                <div className="search-box">
+
+                    <span>🔍</span>
+
+                    <input
+                        className="template-search"
+                        placeholder="Search templates..."
+                        value={search}
+                        onChange={(e) =>
+                            setSearch(
+                                e.target.value
+                            )
+                        }
+                    />
+
+                </div>
+
+                {/* Category Tabs */}
+
+                <div className="category-tabs">
+
+                    {[
+                        {
+                            label: "All",
+                            icon: "✨",
+                        },
+                        {
+                            label: "Work",
+                            icon: "💼",
+                        },
+                        {
+                            label: "Study",
+                            icon: "📚",
+                        },
+                        {
+                            label: "Health",
+                            icon: "❤️",
+                        },
+                        {
+                            label: "Personal",
+                            icon: "👤",
+                        },
+                    ].map((item) => (
+
+                        <button
+                            key={item.label}
+                            className={
+                                category === item.label
+                                    ? "active"
+                                    : ""
+                            }
+                            onClick={() =>
+                                setCategory(
+                                    item.label
+                                )
+                            }
+                        >
+                            {item.icon} {item.label}
+                        </button>
+
+                    ))}
+
+                </div>
+
+                {/* Template List */}
+
+                <div className="template-list">
+
+                    {filteredTemplates.length ===
+                    0 ? (
+
+                        <div className="empty-template">
+
+                            <h2>
+                                No Templates Yet
+                            </h2>
+
+                            <p>
+                                Save your first
+                                task as a template
+                                and reuse it anytime.
+                            </p>
+
+                        </div>
+
+                    ) : (
+
+                        filteredTemplates.map(
+                            (template) => (
+
+                                <TemplateCard
+                                    key={
+                                        template._id
+                                    }
+                                    template={
+                                        template
+                                    }
+                                    openEditModal={
+                                        openEditModal
+                                    }
+                                />
+
+                            )
+                        )
+
+                    )}
+
+                </div>
+
             </div>
-        </div>
+
+            {/* Edit Modal */}
+
+            <EditTemplateModal
+                isOpen={isEditOpen}
+                template={selectedTemplate}
+                onClose={closeEditModal}
+                editTemplate={editTemplate}
+            />
+        </>
     );
 }
