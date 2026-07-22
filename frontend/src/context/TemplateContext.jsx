@@ -30,7 +30,6 @@ export const TemplateProvider = ({
 
   // ==========================
   // LOAD TEMPLATES
-  // ==========================
 
   const loadTemplates =
     async () => {
