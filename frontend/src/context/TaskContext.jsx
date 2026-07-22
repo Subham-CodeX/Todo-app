@@ -1,29 +1,32 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import {createContext,useContext, useEffect,useState,} from "react";
+
+import {getTasks,createTask,updateTask,deleteTask,} from "../services/api";
 
 import {
-  getTasks,
-  createTask,
-  updateTask,
-  deleteTask,
-} from "../services/api";
-
-import {
-  scheduleTaskNotification
+  scheduleTaskNotification,
 } from "../services/notificationService";
-// Create Context
+
+// ==========================
+// CREATE CONTEXT
+// ==========================
 const TaskContext = createContext();
 
-// Custom Hook
-export const useTasks = () => useContext(TaskContext);
+// ==========================
+// CUSTOM HOOK
+// ==========================
 
-// Provider
-export const TaskProvider = ({ children }) => {
-  const [tasks, setTasks] = useState([]);
+export const useTasks = () =>
+  useContext(TaskContext);
+
+// ==========================
+// PROVIDER
+// ==========================
+
+export const TaskProvider = ({
+  children,
+}) => {
+  const [tasks, setTasks] =
+    useState([]);
 
   const [loading, setLoading] =
     useState(true);
@@ -36,7 +39,8 @@ export const TaskProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      const data = await getTasks();
+      const data =
+        await getTasks();
 
       setTasks(
         Array.isArray(data)
@@ -58,27 +62,38 @@ export const TaskProvider = ({ children }) => {
   }, []);
 
   // ==========================
-  // ADD TASK
+  // CREATE TASK
   // ==========================
 
-    const addTask = async (task) => {
+  const addTask = async (
+    taskData
+  ) => {
     try {
-      const newTask =
-        await createTask(task);
+      const task =
+        await createTask({
+          ...taskData,
+
+          // Always create a Task
+          isTemplate: false,
+        });
 
       setTasks((prev) => [
+        task,
         ...prev,
-        newTask,
       ]);
 
-      // Schedule notification
       await scheduleTaskNotification(
-        newTask
+        task
       );
 
-      return newTask;
+      return task;
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Create Task Error:",
+        error
+      );
+
+      throw error;
     }
   };
 
@@ -88,13 +103,13 @@ export const TaskProvider = ({ children }) => {
 
   const editTask = async (
     id,
-    data
+    updatedData
   ) => {
     try {
       const updated =
         await updateTask(
           id,
-          data
+          updatedData
         );
 
       setTasks((prev) =>
@@ -107,7 +122,12 @@ export const TaskProvider = ({ children }) => {
 
       return updated;
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Update Task Error:",
+        error
+      );
+
+      throw error;
     }
   };
 
@@ -127,7 +147,12 @@ export const TaskProvider = ({ children }) => {
           )
         );
       } catch (error) {
-        console.error(error);
+        console.error(
+          "Delete Task Error:",
+          error
+        );
+
+        throw error;
       }
     };
 
@@ -137,9 +162,10 @@ export const TaskProvider = ({ children }) => {
 
   const toggleComplete =
     async (id) => {
-      const task = tasks.find(
-        (t) => t._id === id
-      );
+      const task =
+        tasks.find(
+          (t) => t._id === id
+        );
 
       if (!task) return;
 
@@ -154,10 +180,15 @@ export const TaskProvider = ({ children }) => {
       value={{
         tasks,
         loading,
+
         loadTasks,
+
         addTask,
+
         editTask,
+
         removeTask,
+
         toggleComplete,
       }}
     >
@@ -165,3 +196,5 @@ export const TaskProvider = ({ children }) => {
     </TaskContext.Provider>
   );
 };
+
+export default TaskContext;

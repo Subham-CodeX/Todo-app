@@ -8,7 +8,22 @@ const Task = require("../models/Task");
 exports.createTask = async (req, res) => {
     try {
 
-        const task = await Task.create(req.body);
+        const task = await Task.create({
+
+            title: req.body.title,
+            description: req.body.description,
+            category: req.body.category,
+            priority: req.body.priority,
+            date: req.body.date,
+            startTime: req.body.startTime,
+            endTime: req.body.endTime,
+
+            completed: false,
+
+            // Always create a TASK
+            isTemplate: false
+
+        });
 
         res.status(201).json(task);
 
@@ -22,15 +37,56 @@ exports.createTask = async (req, res) => {
 };
 
 /* ===========================
+   CREATE TEMPLATE
+=========================== */
+
+exports.createTemplate = async (req, res) => {
+
+    try {
+
+        const template = await Task.create({
+
+            title: req.body.title,
+            description: req.body.description,
+            category: req.body.category,
+            priority: req.body.priority,
+            date: req.body.date,
+            startTime: req.body.startTime,
+            endTime: req.body.endTime,
+
+            completed: false,
+
+            // Always create a TEMPLATE
+            isTemplate: true
+
+        });
+
+        res.status(201).json(template);
+
+    } catch (error) {
+
+        res.status(500).json({
+
+            message: error.message
+
+        });
+
+    }
+
+};
+
+/* ===========================
    GET ALL TASKS
 =========================== */
 
 exports.getTasks = async (req, res) => {
     try {
 
-        const tasks = await Task.find().sort({
-            createdAt: -1,
-        });
+        const tasks = await Task.find({
+            isTemplate: false
+            }).sort({
+                createdAt: -1
+            });
 
         res.status(200).json(tasks);
 
@@ -59,12 +115,15 @@ exports.updateTask = async (req, res) => {
             });
         }
 
-        const task = await Task.findByIdAndUpdate(
-            id,
+        const task = await Task.findOneAndUpdate(
+            {
+                _id: id,
+                isTemplate: false
+            },
             req.body,
             {
                 new: true,
-                runValidators: true,
+                runValidators: true
             }
         );
 
@@ -101,7 +160,10 @@ exports.deleteTask = async (req, res) => {
             });
         }
 
-        const task = await Task.findByIdAndDelete(id);
+        const task = await Task.findOneAndDelete({
+            _id: id,
+            isTemplate: false
+        });
 
         if (!task) {
             return res.status(404).json({

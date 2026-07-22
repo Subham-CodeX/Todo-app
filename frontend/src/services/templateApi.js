@@ -8,55 +8,75 @@ const API = axios.create({
 // GET ALL TEMPLATES
 // ==========================
 
-export const getTemplates = async () => {
-  console.log("API Base URL:", API.defaults.baseURL);
+export const getTemplates =
+  async () => {
+    const response =
+      await API.get("/templates");
 
-  const response = await API.get("/templates");
+    return response.data;
+  };
 
-  console.log("Templates Response:", response.data);
+// ==========================
+// CREATE TEMPLATE
+// ==========================
 
-  return response.data;
-};
+export const createTemplate =
+  async (templateData) => {
+
+    const response =
+      await API.post(
+        "/templates",
+        templateData
+      );
+
+    return response.data;
+  };
 
 // ==========================
 // UPDATE TEMPLATE
 // ==========================
 
-export const updateTemplate = async (id, data) => {
-  const response = await API.put(
-    `/templates/${id}`,
-    data
-  );
+export const updateTemplate =
+  async (id, data) => {
 
-  return response.data;
-};
+    const response =
+      await API.put(
+        `/templates/${id}`,
+        data
+      );
+
+    return response.data;
+  };
 
 // ==========================
 // DELETE TEMPLATE
 // ==========================
 
-export const deleteTemplate = async (id) => {
-  const response = await API.delete(
-    `/templates/${id}`
-  );
+export const deleteTemplate =
+  async (id) => {
 
-  return response.data;
-};
+    const response =
+      await API.delete(
+        `/templates/${id}`
+      );
+
+    return response.data;
+  };
 
 // ==========================
 // USE TEMPLATE
 // ==========================
 
-export const useTemplate = async (
-  id,
-  date
-) => {
-  const response = await API.post(
-    `/templates/${id}/use`,
-    {
-      date,
-    }
-  );
+export const useTemplate =
+  async (id, date) => {
 
-  return response.data;
-};
+    const response =
+      await API.post(
+        `/templates/${id}/use`,
+        {
+          date,
+        }
+      );
+
+    return response.data;
+  };

@@ -9,18 +9,30 @@ const AddTaskModal = ({
 }) => {
 
   const { addTask } = useTasks();
-  const { addTemplate } = useTemplates();
+
+  const { addTemplate } =
+    useTemplates();
 
   const initialForm = {
+
     title: "",
+
     description: "",
+
     category: "Work",
+
     priority: "High",
+
     date: "",
+
     startTime: "",
+
     endTime: "",
+
     completed: false,
+
     isTemplate: false,
+
   };
 
   const [formData, setFormData] =
@@ -33,18 +45,29 @@ const AddTaskModal = ({
   const handleChange = (e) => {
 
     const {
+
       name,
+
       value,
+
       type,
+
       checked,
+
     } = e.target;
 
     setFormData((prev) => ({
+
       ...prev,
+
       [name]:
+
         type === "checkbox"
+
           ? checked
+
           : value,
+
     }));
 
   };
@@ -55,35 +78,90 @@ const AddTaskModal = ({
 
   const handleSubmit = async (e) => {
 
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
+    try {
 
-    const newTask = await addTask(formData);
+      // ----------------------
+      // Create Task
+      // ----------------------
 
-    if (newTask?.isTemplate) {
+      await addTask({
 
-      addTemplate(newTask);
+        title: formData.title,
+
+        description:
+          formData.description,
+
+        category:
+          formData.category,
+
+        priority:
+          formData.priority,
+
+        date:
+          formData.date,
+
+        startTime:
+          formData.startTime,
+
+        endTime:
+          formData.endTime,
+
+      });
+
+      // ----------------------
+      // Create Template
+      // ----------------------
+
+      if (formData.isTemplate) {
+
+        await addTemplate({
+
+          title: formData.title,
+
+          description:
+            formData.description,
+
+          category:
+            formData.category,
+
+          priority:
+            formData.priority,
+
+          date:
+            formData.date,
+
+          startTime:
+            formData.startTime,
+
+          endTime:
+            formData.endTime,
+
+        });
+
+      }
+
+      setFormData(initialForm);
+
+      onClose();
+
+    } catch (error) {
+
+      console.error(
+
+        "Create Task Error:",
+
+        error
+
+      );
 
     }
-
-    setFormData(initialForm);
-
-    onClose();
-
-  } catch (error) {
-
-    console.error(
-      "Create Task Error:",
-      error
-    );
-
-  }
 
   };
 
   // ==========================
-  // CLOSE MODAL
+  // CLOSE
   // ==========================
 
   const handleClose = () => {

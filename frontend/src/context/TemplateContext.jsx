@@ -7,8 +7,9 @@ import {
 
 import {
   getTemplates,
-  deleteTemplate,
+  createTemplate,
   updateTemplate,
+  deleteTemplate,
   useTemplate,
 } from "../services/templateApi";
 
@@ -20,6 +21,7 @@ export const useTemplates = () =>
 export const TemplateProvider = ({
   children,
 }) => {
+
   const [templates, setTemplates] =
     useState([]);
 
@@ -32,61 +34,96 @@ export const TemplateProvider = ({
 
   const loadTemplates =
     async () => {
+
       try {
+
         setLoading(true);
 
         const data =
           await getTemplates();
 
-        setTemplates(data);
+        setTemplates(
+          Array.isArray(data)
+            ? data
+            : []
+        );
+
       } catch (error) {
+
         console.error(
-          "Error loading templates:",
+          "Load Templates Error:",
           error
         );
+
       } finally {
+
         setLoading(false);
+
       }
+
     };
 
   useEffect(() => {
+
     loadTemplates();
+
   }, []);
 
   // ==========================
-  // ADD TEMPLATE (NEW)
+  // CREATE TEMPLATE
   // ==========================
 
-  const addTemplate = (template) => {
-    if (!template) return;
+  const addTemplate =
+    async (taskData) => {
 
-    setTemplates((prev) => [
-      template,
-      ...prev,
-    ]);
-  };
-
-  // ==========================
-  // DELETE TEMPLATE
-  // ==========================
-
-  const removeTemplate =
-    async (id) => {
       try {
-        await deleteTemplate(id);
 
-        setTemplates((prev) =>
-          prev.filter(
-            (t) => t._id !== id
-          )
-        );
+        const template =
+          await createTemplate({
+
+            title: taskData.title,
+
+            description:
+              taskData.description,
+
+            category:
+              taskData.category,
+
+            priority:
+              taskData.priority,
+
+            date:
+              taskData.date,
+
+            startTime:
+              taskData.startTime,
+
+            endTime:
+              taskData.endTime,
+
+          });
+
+        setTemplates((prev) => [
+
+          template,
+
+          ...prev,
+
+        ]);
+
+        return template;
+
       } catch (error) {
+
         console.error(
-          "Error deleting template:",
+          "Create Template Error:",
           error
         );
+
         throw error;
+
       }
+
     };
 
   // ==========================
@@ -95,7 +132,9 @@ export const TemplateProvider = ({
 
   const editTemplate =
     async (id, data) => {
+
       try {
+
         const updated =
           await updateTemplate(
             id,
@@ -103,21 +142,68 @@ export const TemplateProvider = ({
           );
 
         setTemplates((prev) =>
-          prev.map((t) =>
-            t._id === id
+
+          prev.map((template) =>
+
+            template._id === id
+
               ? updated
-              : t
+
+              : template
+
           )
+
         );
 
         return updated;
+
       } catch (error) {
+
         console.error(
-          "Error updating template:",
+          "Update Template Error:",
           error
         );
+
         throw error;
+
       }
+
+    };
+
+  // ==========================
+  // DELETE TEMPLATE
+  // ==========================
+
+  const removeTemplate =
+    async (id) => {
+
+      try {
+
+        await deleteTemplate(id);
+
+        setTemplates((prev) =>
+
+          prev.filter(
+
+            (template) =>
+
+              template._id !== id
+
+          )
+
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Delete Template Error:",
+          error
+        );
+
+        throw error;
+
+      }
+
     };
 
   // ==========================
@@ -126,35 +212,57 @@ export const TemplateProvider = ({
 
   const createFromTemplate =
     async (id, date) => {
+
       try {
+
         return await useTemplate(
           id,
           date
         );
+
       } catch (error) {
+
         console.error(
-          "Error creating task from template:",
+          "Use Template Error:",
           error
         );
+
         throw error;
+
       }
+
     };
 
   return (
+
     <TemplateContext.Provider
+
       value={{
+
         templates,
+
         loading,
 
-        // actions
         loadTemplates,
+
         addTemplate,
-        removeTemplate,
+
         editTemplate,
+
+        removeTemplate,
+
         createFromTemplate,
+
       }}
+
     >
+
       {children}
+
     </TemplateContext.Provider>
+
   );
+
 };
+
+export default TemplateContext;
