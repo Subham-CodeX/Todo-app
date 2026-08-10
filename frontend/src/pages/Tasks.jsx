@@ -10,6 +10,7 @@ import AddTaskModal from "../components/AddTaskModal";
 import EditTaskModal from "../components/EditTaskModal";
 import DeleteModal from "../components/DeleteModal";
 // import Navbar from "../components/Navbar";
+import StickyNoteCard from "../components/StickyNoteCard";
 
 import {
   getTasks,
@@ -216,6 +217,7 @@ const Tasks = () => {
         {/* Search */}
 
         <div className="search-box">
+          <span>🔍</span>
           <input
             type="text"
             placeholder="Search Tasks..."
@@ -253,6 +255,10 @@ const Tasks = () => {
             </div>
           </div>
         </section>
+
+        {/* Sticky Note */}
+
+        <StickyNoteCard />
 
         {/* Tasks */}
 

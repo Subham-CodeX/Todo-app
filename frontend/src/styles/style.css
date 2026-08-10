@@ -77,8 +77,10 @@ border-radius:18px;
 .search-box{
 
 padding:0 25px;
+ 
 
 }
+
 
 .search-box input{
 
@@ -92,9 +94,9 @@ outline:none;
 
 border-radius:18px;
 
-background:rgb(40, 9, 84);
+background:rgb(21, 5, 79);
 
-box-shadow:0 8px 20px rgba(0,0,0,.15);
+box-shadow:0 8px 20px rgba(86, 203, 112, 0.15);
 
 }
 

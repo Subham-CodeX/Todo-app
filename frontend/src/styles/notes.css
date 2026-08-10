@@ -1,0 +1,245 @@
+.notes-page {
+  min-height: 100vh;
+
+  background:
+    linear-gradient(
+      180deg,
+      #25145b 0%,
+      #4b2cb8 180px,
+      #f7f5ff 360px
+    );
+
+  padding:
+    25px
+    25px
+    120px;
+
+  max-width: 420px;
+
+  margin: 0 auto;
+
+  position: relative;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.notes-header {
+  display: flex;
+
+  align-items: center;
+
+  gap: 18px;
+
+  color: white;
+
+  margin-bottom: 25px;
+}
+
+.notes-header h1 {
+  margin: 0;
+
+  font-size: 28px;
+}
+
+.notes-header p {
+  margin-top: 4px;
+
+  font-size: 13px;
+
+  opacity: 0.75;
+}
+
+
+/* =========================
+   BACK
+========================= */
+
+.back-btn {
+  border: none;
+
+  width: 45px;
+
+  height: 45px;
+
+  border-radius: 14px;
+
+  background:
+    rgba(255, 255, 255, 0.15);
+
+  color: white;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  cursor: pointer;
+
+  backdrop-filter: blur(10px);
+
+  transition: 0.2s;
+}
+
+.back-btn:hover {
+  background:
+    rgba(255, 255, 255, 0.25);
+
+  transform: translateX(-2px);
+}
+
+
+/* =========================
+   SEARCH
+========================= */
+
+.notes-search {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  background: white;
+
+  padding: 15px 17px;
+
+  border-radius: 18px;
+
+  margin-bottom: 25px;
+
+  box-shadow:
+    0 10px 25px
+    rgba(0, 0, 0, 0.08);
+}
+
+.notes-search svg {
+  color: #7b2ff7;
+}
+
+.notes-search input {
+  border: none;
+
+  outline: none;
+
+  flex: 1;
+
+  font-size: 15px;
+
+  background: none;
+}
+
+
+/* =========================
+   GRID
+========================= */
+
+.notes-grid {
+  column-count: 2;
+
+  column-gap: 14px;
+
+  padding-bottom: 100px;
+}
+
+
+/* =========================
+   LOADING
+========================= */
+
+.notes-loading {
+  text-align: center;
+
+  padding: 60px 0;
+
+  color: white;
+}
+
+
+/* =========================
+   EMPTY
+========================= */
+
+.empty-notes {
+  text-align: center;
+
+  padding:
+    80px 20px;
+
+  color: white;
+}
+
+.empty-notes h2 {
+  font-size: 50px;
+
+  margin-bottom: 15px;
+}
+
+
+/* =========================
+   FAB
+========================= */
+
+.notes-fab {
+  position: fixed;
+
+  right: max(
+    calc((100vw - 420px) / 2 + 25px),
+    25px
+  );
+
+  bottom: 95px;
+
+  width: 62px;
+
+  height: 62px;
+
+  border: none;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #8b2df4,
+      #6a21d9
+    );
+
+  color: white;
+
+  font-size: 22px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 12px 30px
+    rgba(123, 47, 247, 0.4);
+
+  z-index: 100;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 420px) {
+  .notes-page {
+    padding-left: 18px;
+
+    padding-right: 18px;
+  }
+
+  .notes-grid {
+    column-gap: 10px;
+  }
+}

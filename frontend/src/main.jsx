@@ -13,6 +13,8 @@ import {
     TemplateProvider,
 } from "./context/TemplateContext";
 
+import { NotesProvider } from "./context/NotesContext";
+
 registerSW({
 
   immediate: true,
@@ -29,6 +31,8 @@ document.getElementById("root")
 
     <TemplateProvider>
 
+      <NotesProvider>
+
         <App />
 
         <Toaster
@@ -36,6 +40,7 @@ document.getElementById("root")
         reverseOrder={false}
     />
 
+      </NotesProvider>
     </TemplateProvider>
 
   </TaskProvider>
