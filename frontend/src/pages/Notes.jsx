@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -10,6 +11,7 @@ import {
 
 import {
   useNavigate,
+  useSearchParams,
 } from "react-router-dom";
 
 import {
@@ -26,17 +28,39 @@ import EmptyState from "../components/EmptyState";
 
 import "../styles/notes.css";
 
+
 export default function Notes() {
-  const navigate =
-    useNavigate();
+
+  // =========================
+  // NAVIGATION
+  // =========================
+
+  const navigate = useNavigate();
+
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
+
+
+  // =========================
+  // NOTES CONTEXT
+  // =========================
 
   const {
     notes,
     loading,
   } = useNotes();
 
-  const [search, setSearch] =
-    useState("");
+
+  // =========================
+  // STATES
+  // =========================
+
+  const [
+    search,
+    setSearch,
+  ] = useState("");
 
   const [
     noteModalOpen,
@@ -48,72 +72,124 @@ export default function Notes() {
     setSelectedNote,
   ] = useState(null);
 
-  // =========================
-  // FILTER
-  // =========================
-
-  const filteredNotes =
-    useMemo(() => {
-      const keyword =
-        search
-          .toLowerCase()
-          .trim();
-
-      if (!keyword) {
-        return notes;
-      }
-
-      return notes.filter(
-        (note) =>
-          note.title
-            ?.toLowerCase()
-            .includes(keyword) ||
-          note.content
-            ?.toLowerCase()
-            .includes(keyword)
-      );
-    }, [
-      notes,
-      search,
-    ]);
 
   // =========================
-  // CREATE
+  // OPEN CREATE NOTE
   // =========================
 
-  const openCreateNote =
-    () => {
+  const openCreateNote = () => {
+
+    setSelectedNote(null);
+
+    setNoteModalOpen(true);
+
+  };
+
+
+  // =========================
+  // OPEN EDIT NOTE
+  // =========================
+
+  const openEditNote = (note) => {
+
+    setSelectedNote(note);
+
+    setNoteModalOpen(true);
+
+  };
+
+
+  // =========================
+  // CLOSE NOTE MODAL
+  // =========================
+
+  const closeNoteModal = () => {
+
+    setSelectedNote(null);
+
+    setNoteModalOpen(false);
+
+  };
+
+
+  // =========================
+  // AUTO OPEN CREATE MODAL
+  // /notes?new=true
+  // =========================
+
+  useEffect(() => {
+
+    if (
+      searchParams.get("new") === "true"
+    ) {
+
       setSelectedNote(null);
 
       setNoteModalOpen(true);
-    };
+
+      // Remove ?new=true from URL
+      // after opening the modal
+
+      setSearchParams({});
+
+    }
+
+  }, [
+    searchParams,
+    setSearchParams,
+  ]);
+
 
   // =========================
-  // EDIT
+  // FILTER NOTES
   // =========================
 
-  const openEditNote =
-    (note) => {
-      setSelectedNote(note);
+  const filteredNotes = useMemo(() => {
 
-      setNoteModalOpen(true);
-    };
+    const keyword =
+      search
+        .toLowerCase()
+        .trim();
+
+
+    // No search keyword
+    // Return all notes
+
+    if (!keyword) {
+      return notes;
+    }
+
+
+    // Search title/content
+
+    return notes.filter(
+      (note) =>
+        note.title
+          ?.toLowerCase()
+          .includes(keyword) ||
+
+        note.content
+          ?.toLowerCase()
+          .includes(keyword)
+    );
+
+  }, [
+    notes,
+    search,
+  ]);
+
 
   // =========================
-  // CLOSE
+  // UI
   // =========================
-
-  const closeNoteModal =
-    () => {
-      setSelectedNote(null);
-
-      setNoteModalOpen(false);
-    };
 
   return (
+
     <div className="notes-page">
 
-      {/* HEADER */}
+      {/* =========================
+          HEADER
+      ========================= */}
 
       <header className="notes-header">
 
@@ -122,27 +198,38 @@ export default function Notes() {
             navigate(-1)
           }
           className="back-btn"
+          aria-label="Go back"
         >
+
           <FaArrowLeft />
+
         </button>
 
+
         <div>
+
           <h1>
             Sticky Notes
           </h1>
 
           <p>
+
             {notes.length}{" "}
+
             {notes.length === 1
               ? "Note"
               : "Notes"}
+
           </p>
+
         </div>
 
       </header>
 
 
-      {/* SEARCH */}
+      {/* =========================
+          SEARCH
+      ========================= */}
 
       <SearchBar
         value={search}
@@ -150,14 +237,19 @@ export default function Notes() {
       />
 
 
-      {/* NOTES */}
+      {/* =========================
+          NOTES
+      ========================= */}
 
       {loading ? (
+
         <div className="notes-loading">
+
           Loading notes...
+
         </div>
-      ) : filteredNotes.length >
-        0 ? (
+
+      ) : filteredNotes.length > 0 ? (
 
         <motion.div
           className="notes-grid"
@@ -165,8 +257,10 @@ export default function Notes() {
         >
 
           <AnimatePresence>
+
             {filteredNotes.map(
               (note) => (
+
                 <NoteCard
                   key={note._id}
                   note={note}
@@ -174,8 +268,10 @@ export default function Notes() {
                     openEditNote
                   }
                 />
+
               )
             )}
+
           </AnimatePresence>
 
         </motion.div>
@@ -187,7 +283,9 @@ export default function Notes() {
       )}
 
 
-      {/* ADD BUTTON */}
+      {/* =========================
+          ADD NOTE BUTTON
+      ========================= */}
 
       <motion.button
         className="notes-fab"
@@ -200,12 +298,17 @@ export default function Notes() {
         whileTap={{
           scale: 0.9,
         }}
+        aria-label="Create new note"
       >
+
         <FaPlus />
+
       </motion.button>
 
 
-      {/* CREATE / EDIT MODAL */}
+      {/* =========================
+          CREATE / EDIT MODAL
+      ========================= */}
 
       <NoteModal
         isOpen={
@@ -220,5 +323,7 @@ export default function Notes() {
       />
 
     </div>
+
   );
+
 }
