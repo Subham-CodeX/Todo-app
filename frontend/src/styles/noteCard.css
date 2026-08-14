@@ -1,24 +1,32 @@
 .note-card {
   position: relative;
-
   padding: 20px;
-
   border-radius: 20px;
-
   margin-bottom: 15px;
-
   break-inside: avoid;
-
   box-shadow:
     0 8px 20px
     rgba(0, 0, 0, 0.08);
 
   cursor: pointer;
-
   overflow: hidden;
+  touch-action: manipulation;
 
+  -webkit-tap-highlight-color:
+    transparent;
+
+  -webkit-user-select: none;
+
+  user-select: none;
+  will-change: transform;
   transition:
     box-shadow 0.25s ease;
+}
+
+.note-card:active {
+  box-shadow:
+    0 5px 12px
+    rgba(0, 0, 0, 0.12);
 }
 
 .note-card:hover {

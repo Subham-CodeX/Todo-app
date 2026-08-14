@@ -1,41 +1,63 @@
+/* =========================================
+   NOTE MODAL OVERLAY
+========================================= */
+
 .note-modal-overlay {
   position: fixed;
   inset: 0;
 
-  background: rgba(20, 10, 50, 0.45);
+  width: 100%;
+  height: 100%;
 
-  backdrop-filter: blur(5px);
+  background: rgba(20, 10, 50, 0.48);
 
-  z-index: 2000;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+
+  z-index: 5000;
 }
 
 
-/* =========================
-   BOTTOM SHEET
-========================= */
+/* =========================================
+   NOTE BOTTOM SHEET
+========================================= */
 
 .note-modal {
   position: fixed;
 
-  left: 50%;
+  /*
+   IMPORTANT:
+   Don't use left:50% + translateX(-50%)
+   because Framer Motion is also controlling
+   transform for the slide animation.
+  */
 
+  left: 0;
+  right: 0;
   bottom: 0;
 
-  transform: translateX(-50%);
-
   width: 100%;
-
   max-width: 420px;
 
-  min-height: 55vh;
+  margin: 0 auto;
 
-  max-height: 90vh;
+  box-sizing: border-box;
+
+  /*
+   Android viewport protection
+  */
+  max-height: 88dvh;
+
+  min-height: 58dvh;
+
+  padding:
+    16px
+    20px
+    calc(105px + env(safe-area-inset-bottom));
 
   border-radius: 32px 32px 0 0;
 
-  padding: 18px 22px 28px;
-
-  z-index: 2001;
+  z-index: 5001;
 
   box-shadow:
     0 -15px 50px
@@ -44,52 +66,83 @@
   display: flex;
 
   flex-direction: column;
+
+  overflow-x: hidden;
+
+  overflow-y: auto;
+
+  overscroll-behavior: contain;
+
+  -webkit-overflow-scrolling: touch;
 }
 
 
-/* =========================
-   HANDLE
-========================= */
+/* =========================================
+   DRAG HANDLE
+========================================= */
 
 .note-modal-handle {
-  width: 55px;
+  width: 60px;
+  min-height: 5px;
 
-  height: 5px;
+  flex-shrink: 0;
 
-  background: rgba(0, 0, 0, 0.25);
+  background:
+    rgba(70, 65, 45, 0.38);
 
-  border-radius: 20px;
+  border-radius: 50px;
 
-  margin: 0 auto 18px;
+  margin:
+    2px
+    auto
+    20px;
 }
 
 
-/* =========================
+/* =========================================
    HEADER
-========================= */
+========================================= */
 
 .note-modal-header {
-  display: flex;
+  width: 100%;
 
-  justify-content: space-between;
+  display: grid;
+
+  grid-template-columns:
+    44px
+    minmax(0, 1fr)
+    44px;
 
   align-items: center;
 
-  margin-bottom: 15px;
+  gap: 10px;
+
+  flex-shrink: 0;
+
+  margin-bottom: 18px;
 }
 
-.note-icon-btn {
-  width: 42px;
 
-  height: 42px;
+/* =========================================
+   HEADER BUTTONS
+========================================= */
+
+.note-icon-btn {
+  width: 44px;
+  height: 44px;
+
+  min-width: 44px;
+
+  padding: 0;
 
   border: none;
 
   border-radius: 50%;
 
-  background: rgba(255, 255, 255, 0.65);
+  background:
+    rgba(255, 255, 255, 0.7);
 
-  color: #4b2cb8;
+  color: #5d27d8;
 
   display: flex;
 
@@ -99,12 +152,21 @@
 
   cursor: pointer;
 
-  transition: 0.2s;
+  flex-shrink: 0;
+
+  -webkit-tap-highlight-color:
+    transparent;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
-.note-icon-btn:hover {
-  transform: scale(1.08);
+
+.note-icon-btn:active {
+  transform: scale(0.92);
 }
+
 
 .note-icon-btn.pinned {
   background: #7b2ff7;
@@ -113,12 +175,16 @@
 }
 
 
-/* =========================
+/* =========================================
    SAVE STATUS
-========================= */
+========================================= */
 
 .note-save-status {
+  min-width: 0;
+
   display: flex;
+
+  justify-content: center;
 
   align-items: center;
 
@@ -126,18 +192,36 @@
 
   font-size: 12px;
 
-  color: rgba(0, 0, 0, 0.55);
-
   font-weight: 600;
+
+  color:
+    rgba(0, 0, 0, 0.55);
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
 }
 
 
-/* =========================
+/* =========================================
    TITLE
-========================= */
+========================================= */
 
 .note-title-input {
+  display: block;
+
   width: 100%;
+
+  min-width: 0;
+
+  padding: 0;
+
+  margin:
+    0
+    0
+    14px;
 
   border: none;
 
@@ -145,30 +229,50 @@
 
   background: transparent;
 
-  font-size: 25px;
+  font-size: 26px;
+
+  line-height: 1.25;
 
   font-weight: 700;
 
-  color: #222;
+  color: #2e2b26;
 
-  margin-bottom: 12px;
+  box-sizing: border-box;
+
+  flex-shrink: 0;
 }
+
 
 .note-title-input::placeholder {
-  color: rgba(0, 0, 0, 0.4);
+  color:
+    rgba(70, 65, 50, 0.55);
 }
 
 
-/* =========================
+/* =========================================
    CONTENT
-========================= */
+========================================= */
 
 .note-content-input {
+  display: block;
+
   width: 100%;
 
-  flex: 1;
+  min-width: 0;
 
-  min-height: 180px;
+  /*
+   Allows the writing area to grow but
+   doesn't force buttons below viewport.
+  */
+
+  min-height: 150px;
+
+  flex:
+    1 1 180px;
+
+  padding: 0;
+
+  margin: 0;
 
   border: none;
 
@@ -178,65 +282,100 @@
 
   background: transparent;
 
-  color: #333;
+  color: #3d3931;
 
   font-size: 16px;
 
-  line-height: 1.7;
+  line-height: 1.65;
 
   font-family: inherit;
+
+  box-sizing: border-box;
 }
+
 
 .note-content-input::placeholder {
-  color: rgba(0, 0, 0, 0.4);
+  color:
+    rgba(70, 65, 50, 0.48);
 }
 
 
-/* =========================
-   COLORS
-========================= */
+/* =========================================
+   COLOR SECTION
+========================================= */
 
 .note-color-section {
-  margin-top: 15px;
+  width: 100%;
+
+  flex-shrink: 0;
+
+  margin-top: 18px;
 }
+
 
 .note-color-section > span {
   display: block;
+
+  margin-bottom: 12px;
+
+  text-align: center;
 
   font-size: 13px;
 
   font-weight: 700;
 
-  color: rgba(0, 0, 0, 0.55);
-
-  margin-bottom: 10px;
+  color:
+    rgba(0, 0, 0, 0.58);
 }
 
+
+/* =========================================
+   COLOR ROW
+========================================= */
+
 .note-colors {
+  width: 100%;
+
   display: flex;
+
+  align-items: center;
+
+  justify-content: center;
 
   gap: 10px;
 
   flex-wrap: wrap;
+
+  box-sizing: border-box;
 }
 
+
 .note-color {
-  width: 30px;
+  width: 32px;
+  height: 32px;
 
-  height: 30px;
+  min-width: 32px;
 
-  border-radius: 50%;
+  padding: 0;
 
   border: 3px solid transparent;
 
+  border-radius: 50%;
+
   cursor: pointer;
 
-  transition: 0.2s;
+  flex-shrink: 0;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.note-color:hover {
-  transform: scale(1.12);
+
+.note-color:active {
+  transform: scale(0.9);
 }
+
 
 .note-color.selected {
   border-color: #7b2ff7;
@@ -247,72 +386,248 @@
 }
 
 
-/* =========================
-   ACTIONS
-========================= */
+/* =========================================
+   BOTTOM ACTIONS
+========================================= */
 
 .note-modal-actions {
-  display: flex;
-
-  justify-content: flex-end;
-
-  margin-top: 20px;
-}
-
-.note-save-btn,
-.note-delete-btn {
-  border: none;
-
-  padding: 14px 20px;
-
-  border-radius: 15px;
+  width: 100%;
 
   display: flex;
 
   align-items: center;
 
-  gap: 8px;
+  justify-content: flex-end;
+
+  gap: 12px;
+
+  flex-shrink: 0;
+
+  margin-top: 22px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   SAVE / DELETE
+========================================= */
+
+.note-save-btn,
+.note-delete-btn {
+  min-height: 52px;
+
+  border: none;
+
+  border-radius: 16px;
+
+  padding:
+    0
+    20px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 9px;
+
+  font-size: 14px;
 
   font-weight: 700;
 
   cursor: pointer;
+
+  white-space: nowrap;
+
+  -webkit-tap-highlight-color:
+    transparent;
 }
 
+
 .note-save-btn {
-  background: #7b2ff7;
+  background:
+    linear-gradient(
+      135deg,
+      #8b2df4,
+      #7124eb
+    );
 
   color: white;
 
   box-shadow:
-    0 8px 20px
-    rgba(123, 47, 247, 0.3);
+    0 8px 22px
+    rgba(123, 47, 247, 0.32);
 }
 
+
 .note-delete-btn {
+  margin-right: auto;
+
   background: #ff4d4d;
 
   color: white;
-
-  margin-right: auto;
 }
+
+
+.note-save-btn:active,
+.note-delete-btn:active {
+  transform: scale(0.97);
+}
+
 
 .note-save-btn:disabled,
 .note-delete-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
 
   cursor: not-allowed;
 }
 
 
-/* =========================
-   MOBILE
-========================= */
+/* =========================================
+   TABLET / DESKTOP
+========================================= */
+
+@media (min-width: 421px) {
+
+  .note-modal {
+    border-radius:
+      32px
+      32px
+      0
+      0;
+  }
+
+}
+
+
+/* =========================================
+   ANDROID / MOBILE
+========================================= */
 
 @media (max-width: 420px) {
+
   .note-modal {
-    border-radius: 28px 28px 0 0;
+    width: 100%;
+
+    max-width: 100%;
+
+    min-height: 62dvh;
+
+    max-height: 92dvh;
 
     padding:
-      15px 18px 22px;
+      14px
+      18px
+      calc(
+        105px +
+        env(safe-area-inset-bottom)
+      );
+
+    border-radius:
+      28px
+      28px
+      0
+      0;
   }
+
+
+  .note-modal-header {
+    grid-template-columns:
+      42px
+      minmax(0, 1fr)
+      42px;
+  }
+
+
+  .note-icon-btn {
+    width: 42px;
+
+    height: 42px;
+
+    min-width: 42px;
+  }
+
+
+  .note-title-input {
+    font-size: 24px;
+  }
+
+
+  .note-content-input {
+    min-height: 130px;
+
+    font-size: 15px;
+  }
+
+
+  .note-colors {
+    gap: 9px;
+  }
+
+
+  .note-color {
+    width: 29px;
+
+    height: 29px;
+
+    min-width: 29px;
+  }
+
+
+  .note-modal-actions {
+    margin-top: 20px;
+  }
+
+
+  .note-save-btn,
+  .note-delete-btn {
+    min-height: 50px;
+
+    padding:
+      0
+      18px;
+  }
+
+}
+
+
+/* =========================================
+   VERY SMALL ANDROID
+   320px - 360px
+========================================= */
+
+@media (max-width: 360px) {
+
+  .note-modal {
+    padding-left: 14px;
+
+    padding-right: 14px;
+  }
+
+
+  .note-colors {
+    gap: 7px;
+  }
+
+
+  .note-color {
+    width: 27px;
+
+    height: 27px;
+
+    min-width: 27px;
+  }
+
+
+  .note-save-btn,
+  .note-delete-btn {
+    font-size: 13px;
+
+    padding:
+      0
+      14px;
+  }
+
 }

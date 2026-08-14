@@ -278,17 +278,36 @@ export default function NoteModal({
             }}
             initial={{
               y: "100%",
+              opacity: 0.7,
+              scale: 0.98,
             }}
             animate={{
               y: 0,
+              opacity: 1,
+              scale: 1,
             }}
             exit={{
               y: "100%",
+              opacity: 0.7,
+              scale: 0.98,
             }}
             transition={{
               type: "spring",
               stiffness: 350,
               damping: 30,
+              mass: 0.8,
+            }}
+
+            drag="y"
+
+            dragConstraints={{
+              top: 0,
+              bottom: 0,
+            }}
+
+            dragElastic={{
+              top: 0,
+              bottom: 0.2,
             }}
             onClick={(e) =>
               e.stopPropagation()
