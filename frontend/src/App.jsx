@@ -19,6 +19,10 @@ import Notes from "./pages/Notes";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
+import Profile from "./pages/Profile";
+import CompleteProfile from "./pages/CompleteProfile";
+import ChangePassword from "./pages/ChangePassword";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import {
@@ -32,13 +36,10 @@ import {
 function App() {
 
   useEffect(() => {
-
     requestNotificationPermission();
-
   }, []);
 
   return (
-
     <AuthProvider>
 
       <BrowserRouter>
@@ -69,6 +70,39 @@ function App() {
             }
           >
 
+            {/* Profile */}
+            <Route
+              path="/profile"
+              element={
+                <Profile />
+              }
+            />
+
+            <Route
+              path="/profile/complete"
+              element={
+                <CompleteProfile />
+              }
+            />
+
+            <Route
+              path="/profile/edit"
+              element={
+                <CompleteProfile
+                  editMode
+                />
+              }
+            />
+
+            <Route
+              path="/profile/change-password"
+              element={
+                <ChangePassword />
+              }
+            />
+
+            {/* Main Application */}
+
             <Route
               element={<Layout />}
             >
@@ -80,17 +114,23 @@ function App() {
 
               <Route
                 path="/analytics"
-                element={<Analytics />}
+                element={
+                  <Analytics />
+                }
               />
 
               <Route
                 path="/templates"
-                element={<Templates />}
+                element={
+                  <Templates />
+                }
               />
 
               <Route
                 path="/notes"
-                element={<Notes />}
+                element={
+                  <Notes />
+                }
               />
 
             </Route>

@@ -9,6 +9,9 @@ const noteRoutes =
 const authRoutes =
   require("./routes/authRoutes");
 
+const userRoutes =
+  require("./routes/userRoutes");
+
 connectDB();
 
 const app = express();
@@ -38,6 +41,11 @@ app.get("/", (req, res) => {
 app.use(
   "/api/auth",
   authRoutes
+);
+
+app.use(
+  "/api/users",
+  userRoutes
 );
 
 app.use(

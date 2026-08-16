@@ -99,6 +99,11 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    profileImagePublicId: {
+      type: String,
+      default: "",
+    },
+
     profileComplete: {
       type: Boolean,
       default: false,

@@ -9,8 +9,10 @@ import TaskCard from "../components/TaskCard";
 import AddTaskModal from "../components/AddTaskModal";
 import EditTaskModal from "../components/EditTaskModal";
 import DeleteModal from "../components/DeleteModal";
-// import Navbar from "../components/Navbar";
 import StickyNoteCard from "../components/StickyNoteCard";
+import {
+  useAuth,
+} from "../context/AuthContext";
 
 import {
   getTasks,
@@ -52,6 +54,10 @@ const Tasks = () => {
   useEffect(() => {
     loadTasks();
   }, []);
+
+  const {
+    user,
+  } = useAuth();
 
   const loadTasks = async () => {
     try {
@@ -203,13 +209,24 @@ const Tasks = () => {
         <header className="hero">
           <div className="welcome">
             <h3>Hello 👋</h3>
-            <h1>Subham</h1>
+            <h1>{user?.name || "User"}</h1>
           </div>
 
           <div className="profile">
             <img
-              src="https://i.pravatar.cc/100"
-              alt="Profile"
+              src={
+                user?.profileImage ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  user?.name || "User"
+                )}&background=7B2FF7&color=fff`
+              }
+              alt={
+                user?.name || "Profile"
+              }
+              onClick={() =>
+                window.location.href =
+                  "/profile"
+              }
             />
           </div>
         </header>

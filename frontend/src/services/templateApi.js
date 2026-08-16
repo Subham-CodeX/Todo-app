@@ -1,8 +1,4 @@
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
-});
+import API from "./api";
 
 // ==========================
 // GET ALL TEMPLATES
@@ -11,7 +7,9 @@ const API = axios.create({
 export const getTemplates =
   async () => {
     const response =
-      await API.get("/templates");
+      await API.get(
+        "/templates"
+      );
 
     return response.data;
   };
@@ -22,7 +20,6 @@ export const getTemplates =
 
 export const createTemplate =
   async (templateData) => {
-
     const response =
       await API.post(
         "/templates",
@@ -38,7 +35,6 @@ export const createTemplate =
 
 export const updateTemplate =
   async (id, data) => {
-
     const response =
       await API.put(
         `/templates/${id}`,
@@ -54,7 +50,6 @@ export const updateTemplate =
 
 export const deleteTemplate =
   async (id) => {
-
     const response =
       await API.delete(
         `/templates/${id}`
@@ -69,7 +64,6 @@ export const deleteTemplate =
 
 export const useTemplate =
   async (id, date) => {
-
     const response =
       await API.post(
         `/templates/${id}/use`,

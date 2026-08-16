@@ -1,47 +1,59 @@
-import axios from "axios";
+import API from "./api";
 
-const API = import.meta.env.VITE_API_URL + "/api/notes";
+// ==========================
+// GET NOTES
+// ==========================
 
-/* GET */
+export const getNotes =
+  async () => {
+    const response =
+      await API.get(
+        "/notes"
+      );
 
-export const getNotes = async () => {
+    return response.data;
+  };
 
-    const res = await axios.get(API);
+// ==========================
+// CREATE NOTE
+// ==========================
 
-    return res.data;
+export const createNote =
+  async (note) => {
+    const response =
+      await API.post(
+        "/notes",
+        note
+      );
 
-};
+    return response.data;
+  };
 
-/* CREATE */
+// ==========================
+// UPDATE NOTE
+// ==========================
 
-export const createNote = async (note) => {
-
-    const res = await axios.post(API, note);
-
-    return res.data;
-
-};
-
-/* UPDATE */
-
-export const updateNote = async (
+export const updateNote =
+  async (
     id,
     note
-) => {
-
-    const res = await axios.put(
-        `${API}/${id}`,
+  ) => {
+    const response =
+      await API.put(
+        `/notes/${id}`,
         note
+      );
+
+    return response.data;
+  };
+
+// ==========================
+// DELETE NOTE
+// ==========================
+
+export const deleteNote =
+  async (id) => {
+    await API.delete(
+      `/notes/${id}`
     );
-
-    return res.data;
-
-};
-
-/* DELETE */
-
-export const deleteNote = async (id) => {
-
-    await axios.delete(`${API}/${id}`);
-
-};
+  };

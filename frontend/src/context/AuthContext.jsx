@@ -13,44 +13,37 @@ const AuthContext =
 export function AuthProvider({
   children,
 }) {
+  const [user, setUser] =
+    useState(null);
 
-  const [
-    user,
-    setUser,
-  ] = useState(null);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-
-  // ==============================
-  // LOAD CURRENT USER
-  // ==============================
+  // =====================================
+  // LOAD USER AFTER APP START
+  // =====================================
 
   useEffect(() => {
-
     const token =
       localStorage.getItem(
         "taskflowToken"
       );
 
     if (!token) {
-
       setLoading(false);
-
       return;
     }
 
     loadCurrentUser();
-
   }, []);
+
+  // =====================================
+  // LOAD CURRENT USER
+  // =====================================
 
   const loadCurrentUser =
     async () => {
-
       try {
-
         const response =
           await API.get(
             "/auth/me"
@@ -61,7 +54,6 @@ export function AuthProvider({
         );
 
       } catch (error) {
-
         console.error(
           "Auth Error:",
           error
@@ -74,21 +66,18 @@ export function AuthProvider({
         setUser(null);
 
       } finally {
-
         setLoading(false);
-
       }
     };
 
-  // ==============================
+  // =====================================
   // LOGIN
-  // ==============================
+  // =====================================
 
   const login = async (
     email,
     password
   ) => {
-
     const response =
       await API.post(
         "/auth/login",
@@ -110,9 +99,9 @@ export function AuthProvider({
     return response.data;
   };
 
-  // ==============================
+  // =====================================
   // REGISTER
-  // ==============================
+  // =====================================
 
   const register =
     async (
@@ -120,7 +109,6 @@ export function AuthProvider({
       email,
       password
     ) => {
-
       const response =
         await API.post(
           "/auth/register",
@@ -143,18 +131,44 @@ export function AuthProvider({
       return response.data;
     };
 
-  // ==============================
+  // =====================================
+  // REFRESH USER
+  // =====================================
+
+  const refreshUser =
+    async () => {
+      try {
+        const response =
+          await API.get(
+            "/auth/me"
+          );
+
+        setUser(
+          response.data.user
+        );
+
+        return response.data.user;
+
+      } catch (error) {
+        console.error(
+          "Refresh User Error:",
+          error
+        );
+
+        return null;
+      }
+    };
+
+  // =====================================
   // LOGOUT
-  // ==============================
+  // =====================================
 
   const logout = () => {
-
     localStorage.removeItem(
       "taskflowToken"
     );
 
     setUser(null);
-
   };
 
   return (
@@ -165,6 +179,7 @@ export function AuthProvider({
         login,
         register,
         logout,
+        refreshUser,
       }}
     >
       {children}
@@ -173,7 +188,6 @@ export function AuthProvider({
 }
 
 export function useAuth() {
-
   return useContext(
     AuthContext
   );
