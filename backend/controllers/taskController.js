@@ -1,356 +1,441 @@
 const mongoose = require("mongoose");
 const Task = require("../models/Task");
 
-/* ===========================
-   CREATE TASK
-=========================== */
+// ==============================
+// ALLOWED TASK FIELDS
+// ==============================
+
+const getTaskData = (body) => ({
+  title: body.title,
+  description: body.description,
+  category: body.category,
+  priority: body.priority,
+  date: body.date,
+  startTime: body.startTime,
+  endTime: body.endTime,
+});
+
+// ==============================
+// CREATE TASK
+// ==============================
 
 exports.createTask = async (req, res) => {
-    try {
+  try {
 
-        const task = await Task.create({
+    const task = await Task.create({
+      ...getTaskData(req.body),
 
-            title: req.body.title,
-            description: req.body.description,
-            category: req.body.category,
-            priority: req.body.priority,
-            date: req.body.date,
-            startTime: req.body.startTime,
-            endTime: req.body.endTime,
+      userId: req.user.id,
+      completed: false,
+      isTemplate: false,
+    });
 
-            completed: false,
+    res.status(201).json(task);
 
-            // Always create a TASK
-            isTemplate: false
+  } catch (error) {
 
-        });
+    res.status(500).json({
+      message: error.message,
+    });
 
-        res.status(201).json(task);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        });
-
-    }
+  }
 };
 
-/* ===========================
-   CREATE TEMPLATE
-=========================== */
+// ==============================
+// CREATE TEMPLATE
+// ==============================
 
-exports.createTemplate = async (req, res) => {
+exports.createTemplate = async (
+  req,
+  res
+) => {
+  try {
 
-    try {
+    const template =
+      await Task.create({
+        ...getTaskData(req.body),
 
-        const template = await Task.create({
+        userId: req.user.id,
+        completed: false,
+        isTemplate: true,
+      });
 
-            title: req.body.title,
-            description: req.body.description,
-            category: req.body.category,
-            priority: req.body.priority,
-            date: req.body.date,
-            startTime: req.body.startTime,
-            endTime: req.body.endTime,
+    res.status(201).json(template);
 
-            completed: false,
+  } catch (error) {
 
-            // Always create a TEMPLATE
-            isTemplate: true
+    res.status(500).json({
+      message: error.message,
+    });
 
-        });
-
-        res.status(201).json(template);
-
-    } catch (error) {
-
-        res.status(500).json({
-
-            message: error.message
-
-        });
-
-    }
-
+  }
 };
 
-/* ===========================
-   GET ALL TASKS
-=========================== */
+// ==============================
+// GET USER TASKS
+// ==============================
 
-exports.getTasks = async (req, res) => {
-    try {
+exports.getTasks = async (
+  req,
+  res
+) => {
+  try {
 
-        const tasks = await Task.find({
-            isTemplate: false
-            }).sort({
-                createdAt: -1
-            });
+    const tasks =
+      await Task.find({
+        userId: req.user.id,
+        isTemplate: false,
+      }).sort({
+        createdAt: -1,
+      });
 
-        res.status(200).json(tasks);
+    res.status(200).json(tasks);
 
-    } catch (error) {
+  } catch (error) {
 
-        res.status(500).json({
-            message: error.message,
-        });
+    res.status(500).json({
+      message: error.message,
+    });
 
-    }
+  }
 };
 
-/* ===========================
-   UPDATE TASK
-=========================== */
+// ==============================
+// UPDATE TASK
+// ==============================
 
-exports.updateTask = async (req, res) => {
-    try {
+exports.updateTask = async (
+  req,
+  res
+) => {
+  try {
 
-        const { id } = req.params;
+    const { id } =
+      req.params;
 
-        // Validate ObjectId
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
-                message: "Invalid Task ID",
-            });
-        }
-
-        const task = await Task.findOneAndUpdate(
-            {
-                _id: id,
-                isTemplate: false
-            },
-            req.body,
-            {
-                new: true,
-                runValidators: true
-            }
-        );
-
-        if (!task) {
-            return res.status(404).json({
-                message: "Task not found",
-            });
-        }
-
-        res.status(200).json(task);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        });
-
+    if (
+      !mongoose.Types.ObjectId.isValid(id)
+    ) {
+      return res.status(400).json({
+        message: "Invalid Task ID",
+      });
     }
+
+    const task =
+      await Task.findOneAndUpdate(
+        {
+          _id: id,
+
+          userId: req.user.id,
+
+          isTemplate: false,
+        },
+
+        {
+          $set: getTaskData(req.body),
+        },
+
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+    if (!task) {
+      return res.status(404).json({
+        message:
+          "Task not found",
+      });
+    }
+
+    res.status(200).json(task);
+
+  } catch (error) {
+
+    res.status(500).json({
+      message: error.message,
+    });
+
+  }
 };
 
-/* ===========================
-   DELETE TASK
-=========================== */
+// ==============================
+// DELETE TASK
+// ==============================
 
-exports.deleteTask = async (req, res) => {
-    try {
+exports.deleteTask = async (
+  req,
+  res
+) => {
+  try {
 
-        const { id } = req.params;
+    const { id } =
+      req.params;
 
-        // Validate ObjectId
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
-                message: "Invalid Task ID",
-            });
-        }
-
-        const task = await Task.findOneAndDelete({
-            _id: id,
-            isTemplate: false
-        });
-
-        if (!task) {
-            return res.status(404).json({
-                message: "Task not found",
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Task deleted successfully",
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        });
-
+    if (
+      !mongoose.Types.ObjectId.isValid(id)
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid Task ID",
+      });
     }
+
+    const task =
+      await Task.findOneAndDelete({
+        _id: id,
+
+        userId: req.user.id,
+
+        isTemplate: false,
+      });
+
+    if (!task) {
+      return res.status(404).json({
+        message:
+          "Task not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+
+      message:
+        "Task deleted successfully",
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      message: error.message,
+    });
+
+  }
 };
 
-/* ===========================
-   GET ALL TEMPLATES
-=========================== */
+// ==============================
+// GET USER TEMPLATES
+// ==============================
 
-exports.getTemplates = async (req, res) => {
-    try {
+exports.getTemplates = async (
+  req,
+  res
+) => {
+  try {
 
-        const templates = await Task.find({
-            isTemplate: true,
-        }).sort({
-            createdAt: -1,
-        });
+    const templates =
+      await Task.find({
+        userId: req.user.id,
 
-        res.status(200).json(templates);
+        isTemplate: true,
+      }).sort({
+        createdAt: -1,
+      });
 
-    } catch (error) {
+    res.status(200).json(
+      templates
+    );
 
-        res.status(500).json({
-            message: error.message,
-        });
+  } catch (error) {
 
-    }
+    res.status(500).json({
+      message: error.message,
+    });
+
+  }
 };
 
-/* ===========================
-   DELETE TEMPLATE
-=========================== */
+// ==============================
+// DELETE TEMPLATE
+// ==============================
 
-exports.deleteTemplate = async (req, res) => {
-    try {
+exports.deleteTemplate = async (
+  req,
+  res
+) => {
+  try {
 
-        const { id } = req.params;
+    const { id } =
+      req.params;
 
-        console.log("Delete Template ID:", id);
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
-                message: "Invalid Template ID",
-            });
-        }
-
-        const template = await Task.findById(id);
-
-        console.log("Template Found:", template);
-
-        if (!template) {
-            return res.status(404).json({
-                message: "Template not found",
-            });
-        }
-
-        if (!template.isTemplate) {
-            return res.status(400).json({
-                message: "Task is not a template",
-            });
-        }
-
-        await Task.findByIdAndDelete(id);
-
-        return res.json({
-            success: true,
-            message: "Template deleted successfully",
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            message: error.message,
-        });
-
+    if (
+      !mongoose.Types.ObjectId.isValid(id)
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid Template ID",
+      });
     }
+
+    const template =
+      await Task.findOneAndDelete({
+        _id: id,
+
+        userId: req.user.id,
+
+        isTemplate: true,
+      });
+
+    if (!template) {
+      return res.status(404).json({
+        message:
+          "Template not found",
+      });
+    }
+
+    res.json({
+      success: true,
+
+      message:
+        "Template deleted successfully",
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      message: error.message,
+    });
+
+  }
 };
 
-/* ===========================
-   UPDATE TEMPLATE
-=========================== */
+// ==============================
+// UPDATE TEMPLATE
+// ==============================
 
-exports.updateTemplate = async (req, res) => {
+exports.updateTemplate = async (
+  req,
+  res
+) => {
+  try {
 
-    try {
+    const { id } =
+      req.params;
 
-        const { id } = req.params;
-
-        const template = await Task.findById(id);
-
-        if (!template) {
-            return res.status(404).json({
-                message: "Template not found",
-            });
-        }
-
-        if (!template.isTemplate) {
-            return res.status(400).json({
-                message: "Task is not a template",
-            });
-        }
-
-        Object.assign(template, req.body);
-
-        await template.save();
-
-        res.json(template);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        });
-
+    if (
+      !mongoose.Types.ObjectId.isValid(id)
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid Template ID",
+      });
     }
 
+    const template =
+      await Task.findOneAndUpdate(
+        {
+          _id: id,
+
+          userId: req.user.id,
+
+          isTemplate: true,
+        },
+
+        {
+          $set: getTaskData(
+            req.body
+          ),
+        },
+
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+    if (!template) {
+      return res.status(404).json({
+        message:
+          "Template not found",
+      });
+    }
+
+    res.json(template);
+
+  } catch (error) {
+
+    res.status(500).json({
+      message: error.message,
+    });
+
+  }
 };
 
-/* ===========================
-   USE TEMPLATE
-=========================== */
+// ==============================
+// USE TEMPLATE
+// ==============================
 
-exports.useTemplate = async (req, res) => {
+exports.useTemplate = async (
+  req,
+  res
+) => {
+  try {
 
-    try {
+    const { id } =
+      req.params;
 
-        const { id } = req.params;
-
-        const template = await Task.findOne({
-            _id: id,
-            isTemplate: true,
-        });
-
-        if (!template) {
-            return res.status(404).json({
-                message: "Template not found",
-            });
-        }
-
-        const task = await Task.create({
-
-            title: template.title,
-
-            description: template.description,
-
-            category: template.category,
-
-            priority: template.priority,
-
-            startTime: template.startTime,
-
-            endTime: template.endTime,
-
-            date: req.body.date,
-
-            completed: false,
-
-            isTemplate: false,
-
-        });
-
-        res.status(201).json(task);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        });
-
+    if (
+      !mongoose.Types.ObjectId.isValid(id)
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid Template ID",
+      });
     }
 
+    const template =
+      await Task.findOne({
+        _id: id,
+
+        userId: req.user.id,
+
+        isTemplate: true,
+      });
+
+    if (!template) {
+      return res.status(404).json({
+        message:
+          "Template not found",
+      });
+    }
+
+    const task =
+      await Task.create({
+        userId: req.user.id,
+
+        title:
+          template.title,
+
+        description:
+          template.description,
+
+        category:
+          template.category,
+
+        priority:
+          template.priority,
+
+        startTime:
+          template.startTime,
+
+        endTime:
+          template.endTime,
+
+        date:
+          req.body.date,
+
+        completed: false,
+
+        isTemplate: false,
+      });
+
+    res.status(201).json(task);
+
+  } catch (error) {
+
+    res.status(500).json({
+      message: error.message,
+    });
+
+  }
 };

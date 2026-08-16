@@ -1,25 +1,49 @@
 const express = require("express");
 
-const router = express.Router();
+const router =
+  express.Router();
 
 const {
+  createTemplate,
+  getTemplates,
+  deleteTemplate,
+  updateTemplate,
+  useTemplate,
+} = require(
+  "../controllers/taskController"
+);
 
-    createTemplate,
-    getTemplates,
+const protect =
+  require(
+    "../middleware/authMiddleware"
+  );
 
-    deleteTemplate,
+// Every template route requires login
+router.use(protect);
 
-    updateTemplate,
+router.post(
+  "/",
+  createTemplate
+);
 
-    useTemplate,
+router.get(
+  "/",
+  getTemplates
+);
 
-} = require("../controllers/taskController");
+router.put(
+  "/:id",
+  updateTemplate
+);
 
-router.post("/", createTemplate);
-router.get("/", getTemplates);
-router.put("/:id", updateTemplate);
-router.delete("/:id", deleteTemplate);
+router.delete(
+  "/:id",
+  deleteTemplate
+);
 
-router.post("/:id/use", useTemplate);
+router.post(
+  "/:id/use",
+  useTemplate
+);
 
 module.exports = router;

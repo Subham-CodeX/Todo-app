@@ -1,15 +1,33 @@
-const Note = require("../models/Note");
+const Note =
+  require("../models/Note");
 
-// =========================
-// GET ALL NOTES
-// =========================
+// ==============================
+// ALLOWED NOTE DATA
+// ==============================
 
-const getNotes = async (req, res) => {
+const getNoteData = (body) => ({
+  title: body.title,
+  content: body.content,
+  color: body.color,
+  isPinned: body.isPinned,
+  archived: body.archived,
+  favorite: body.favorite,
+});
 
+// ==============================
+// GET USER NOTES
+// ==============================
+
+const getNotes = async (
+  req,
+  res
+) => {
   try {
 
-    const notes = await Note.find()
-      .sort({
+    const notes =
+      await Note.find({
+        userId: req.user.id,
+      }).sort({
         isPinned: -1,
         updatedAt: -1,
       });
@@ -28,20 +46,24 @@ const getNotes = async (req, res) => {
     });
 
   }
-
 };
 
-// =========================
+// ==============================
 // CREATE NOTE
-// =========================
+// ==============================
 
-const createNote = async (req, res) => {
-
+const createNote = async (
+  req,
+  res
+) => {
   try {
 
-    const note = await Note.create(
-      req.body
-    );
+    const note =
+      await Note.create({
+        ...getNoteData(req.body),
+
+        userId: req.user.id,
+      });
 
     res.status(201).json(note);
 
@@ -57,33 +79,45 @@ const createNote = async (req, res) => {
     });
 
   }
-
 };
 
-// =========================
+// ==============================
 // UPDATE NOTE
-// =========================
+// ==============================
 
-const updateNote = async (req, res) => {
-
+const updateNote = async (
+  req,
+  res
+) => {
   try {
 
     const note =
-      await Note.findByIdAndUpdate(
-        req.params.id,
-        req.body,
+      await Note.findOneAndUpdate(
+        {
+          _id: req.params.id,
+
+          userId: req.user.id,
+        },
+
+        {
+          $set:
+            getNoteData(
+              req.body
+            ),
+        },
+
         {
           new: true,
+
           runValidators: true,
         }
       );
 
     if (!note) {
-
       return res.status(404).json({
-        message: "Note not found",
+        message:
+          "Note not found",
       });
-
     }
 
     res.status(200).json(note);
@@ -100,33 +134,37 @@ const updateNote = async (req, res) => {
     });
 
   }
-
 };
 
-// =========================
+// ==============================
 // DELETE NOTE
-// =========================
+// ==============================
 
-const deleteNote = async (req, res) => {
-
+const deleteNote = async (
+  req,
+  res
+) => {
   try {
 
     const note =
-      await Note.findByIdAndDelete(
-        req.params.id
-      );
+      await Note.findOneAndDelete({
+        _id: req.params.id,
 
-    if (!note) {
-
-      return res.status(404).json({
-        message: "Note not found",
+        userId: req.user.id,
       });
 
+    if (!note) {
+      return res.status(404).json({
+        message:
+          "Note not found",
+      });
     }
 
     res.status(200).json({
       success: true,
-      message: "Note deleted successfully",
+
+      message:
+        "Note deleted successfully",
     });
 
   } catch (err) {
@@ -141,13 +179,7 @@ const deleteNote = async (req, res) => {
     });
 
   }
-
 };
-
-
-// =========================
-// EXPORT
-// =========================
 
 module.exports = {
   getNotes,

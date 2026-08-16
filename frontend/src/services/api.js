@@ -1,105 +1,122 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL:
+    `${import.meta.env.VITE_API_URL}/api`,
 });
 
-/* ==========================
-   TASK API
-========================== */
+// =================================
+// REQUEST INTERCEPTOR
+// =================================
 
-// Get All Tasks
-export const getTasks = async () => {
-  try {
-    const response = await API.get("/tasks");
-    return response.data;
-  } catch (error) {
-    console.error("Get Tasks Error:", error);
-    return [];
+API.interceptors.request.use(
+  (config) => {
+
+    const token =
+      localStorage.getItem(
+        "taskflowToken"
+      );
+
+    if (token) {
+      config.headers.Authorization =
+        `Bearer ${token}`;
+    }
+
+    return config;
+  },
+
+  (error) => {
+    return Promise.reject(error);
   }
-};
+);
 
-// Create Task
-export const createTask = async (taskData) => {
-  try {
-    const response = await API.post(
-      "/tasks",
-      taskData
-    );
+// =================================
+// RESPONSE INTERCEPTOR
+// =================================
 
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Create Task Error:",
-      error
-    );
+API.interceptors.response.use(
+  (response) => response,
 
-    throw error;
+  (error) => {
+
+    if (
+      error.response?.status === 401
+    ) {
+      localStorage.removeItem(
+        "taskflowToken"
+      );
+    }
+
+    return Promise.reject(error);
   }
-};
+);
 
-// Update Task
-export const updateTask = async (
-  taskId,
-  updatedData
-) => {
-  try {
-    const response = await API.put(
-      `/tasks/${taskId}`,
-      updatedData
-    );
+// =================================
+// TASK API
+// =================================
 
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Update Task Error:",
-      error
-    );
+export const getTasks =
+  async () => {
 
-    throw error;
-  }
-};
-
-// Delete Task
-export const deleteTask = async (
-  taskId
-) => {
-  try {
-    const response = await API.delete(
-      `/tasks/${taskId}`
-    );
+    const response =
+      await API.get("/tasks");
 
     return response.data;
-  } catch (error) {
-    console.error(
-      "Delete Task Error:",
-      error
-    );
+  };
 
-    throw error;
-  }
-};
+export const createTask =
+  async (taskData) => {
 
-// Toggle Complete
+    const response =
+      await API.post(
+        "/tasks",
+        taskData
+      );
+
+    return response.data;
+  };
+
+export const updateTask =
+  async (
+    taskId,
+    updatedData
+  ) => {
+
+    const response =
+      await API.put(
+        `/tasks/${taskId}`,
+        updatedData
+      );
+
+    return response.data;
+  };
+
+export const deleteTask =
+  async (taskId) => {
+
+    const response =
+      await API.delete(
+        `/tasks/${taskId}`
+      );
+
+    return response.data;
+  };
+
 export const toggleTaskComplete =
-  async (taskId, completed) => {
-    try {
-      const response = await API.put(
+  async (
+    taskId,
+    completed
+  ) => {
+
+    const response =
+      await API.put(
         `/tasks/${taskId}`,
         {
           completed,
         }
       );
 
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Toggle Complete Error:",
-        error
-      );
-
-      throw error;
-    }
+    return response.data;
   };
 
 export default API;

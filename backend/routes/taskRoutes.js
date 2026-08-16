@@ -1,26 +1,43 @@
-const express =
-require("express");
+const express = require("express");
 
 const router =
-express.Router();
+  express.Router();
 
 const {
-
-createTask,
-getTasks,
-deleteTask,
-updateTask
-
+  createTask,
+  getTasks,
+  deleteTask,
+  updateTask,
 } = require(
-"../controllers/taskController"
+  "../controllers/taskController"
 );
 
-router.get("/",getTasks);
+const protect =
+  require(
+    "../middleware/authMiddleware"
+  );
 
-router.post("/",createTask);
+// Every task route requires login
+router.use(protect);
 
-router.delete("/:id",deleteTask);
+router.get(
+  "/",
+  getTasks
+);
 
-router.put("/:id",updateTask);
+router.post(
+  "/",
+  createTask
+);
+
+router.delete(
+  "/:id",
+  deleteTask
+);
+
+router.put(
+  "/:id",
+  updateTask
+);
 
 module.exports = router;
