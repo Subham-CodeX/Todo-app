@@ -3,13 +3,22 @@ import {
 } from "react";
 
 import {
-  Link,
   useNavigate,
 } from "react-router-dom";
 
 import {
+  FaEnvelope,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaArrowRight,
+} from "react-icons/fa";
+
+import {
   useAuth,
 } from "../context/AuthContext";
+
+import AuthLayout from "../components/AuthLayout";
 
 export default function Login() {
 
@@ -31,6 +40,11 @@ export default function Login() {
   ] = useState("");
 
   const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
+
+  const [
     error,
     setError,
   ] = useState("");
@@ -40,6 +54,11 @@ export default function Login() {
     setLoading,
   ] = useState(false);
 
+
+  // =====================================
+  // LOGIN
+  // =====================================
+
   const handleSubmit =
     async (e) => {
 
@@ -47,23 +66,75 @@ export default function Login() {
 
       setError("");
 
+      if (!email.trim()) {
+
+        setError(
+          "Please enter your email."
+        );
+
+        return;
+      }
+
+      if (!password) {
+
+        setError(
+          "Please enter your password."
+        );
+
+        return;
+      }
+
       try {
 
         setLoading(true);
 
-        await login(
-          email,
-          password
-        );
+        const result =
+          await login(
+            email.trim(),
+            password
+          );
 
-        navigate("/");
+        /*
+         * IMPORTANT:
+         *
+         * New users who haven't completed
+         * their profile must go to
+         * /profile/complete.
+         */
+
+        if (
+          result?.user?.profileComplete ===
+          false
+        ) {
+
+          navigate(
+            "/profile/complete",
+            {
+              replace: true,
+            }
+          );
+
+        } else {
+
+          navigate(
+            "/",
+            {
+              replace: true,
+            }
+          );
+
+        }
 
       } catch (error) {
 
+        console.error(
+          "Login Error:",
+          error
+        );
+
         setError(
-          error.response?.data
-            ?.message ||
-          "Login failed"
+          error.response?.data?.message ||
+          "Login failed. Please check your email and password."
         );
 
       } finally {
@@ -71,84 +142,187 @@ export default function Login() {
         setLoading(false);
 
       }
+
     };
 
+
   return (
-    <div className="auth-page">
 
-      <div className="auth-card">
+    <AuthLayout mode="login">
 
-        <h1>
-          TaskFlow
-        </h1>
+      {/* =================================
+          HEADING
+      ================================= */}
+
+      <div className="auth-heading">
+
+        <p className="auth-heading-label">
+          WELCOME BACK
+        </p>
 
         <h2>
-          Welcome Back 👋
+          Welcome back 👋
         </h2>
 
-        {error && (
-          <div className="auth-error">
-            {error}
-          </div>
-        )}
+        <p>
+          Sign in to continue to
+          your TaskFlow workspace.
+        </p>
 
-        <form
-          onSubmit={handleSubmit}
-        >
+      </div>
+
+
+      {/* =================================
+          ERROR
+      ================================= */}
+
+      {error && (
+
+        <div className="auth-error">
+
+          <span>
+            !
+          </span>
+
+          {error}
+
+        </div>
+
+      )}
+
+
+      {/* =================================
+          FORM
+      ================================= */}
+
+      <form
+        className="auth-form"
+        onSubmit={handleSubmit}
+      >
+
+        {/* EMAIL */}
+
+        <div className="auth-field">
 
           <label>
             Email
           </label>
 
-          <input
-            type="email"
-            value={email}
-            onChange={(e) =>
-              setEmail(
-                e.target.value
-              )
-            }
-            placeholder="Enter your email"
-            required
-          />
+          <div className="auth-input-wrapper">
 
-          <label>
-            Password
-          </label>
+            <FaEnvelope />
 
-          <input
-            type="password"
-            value={password}
-            onChange={(e) =>
-              setPassword(
-                e.target.value
-              )
-            }
-            placeholder="Enter your password"
-            required
-          />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) =>
+                setEmail(
+                  e.target.value
+                )
+              }
+              placeholder="Enter your email"
+              autoComplete="email"
+            />
 
-          <button
-            type="submit"
-            disabled={loading}
-          >
+          </div>
+
+        </div>
+
+
+        {/* PASSWORD */}
+
+        <div className="auth-field">
+
+          <div className="auth-label-row">
+
+            <label>
+              Password
+            </label>
+
+            <button
+              type="button"
+              className="forgot-password"
+              onClick={() => {
+                alert(
+                  "Password recovery will be available soon."
+                );
+              }}
+            >
+              Forgot Password?
+            </button>
+
+          </div>
+
+
+          <div className="auth-input-wrapper">
+
+            <FaLock />
+
+            <input
+              type={
+                showPassword
+                  ? "text"
+                  : "password"
+              }
+              value={password}
+              onChange={(e) =>
+                setPassword(
+                  e.target.value
+                )
+              }
+              placeholder="Enter your password"
+              autoComplete="current-password"
+            />
+
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() =>
+                setShowPassword(
+                  (prev) => !prev
+                )
+              }
+              aria-label={
+                showPassword
+                  ? "Hide password"
+                  : "Show password"
+              }
+            >
+              {showPassword ? (
+                <FaEyeSlash />
+              ) : (
+                <FaEye />
+              )}
+            </button>
+
+          </div>
+
+        </div>
+
+
+        {/* LOGIN BUTTON */}
+
+        <button
+          type="submit"
+          className="auth-submit"
+          disabled={loading}
+        >
+
+          <span>
             {loading
               ? "Logging in..."
               : "Login"}
-          </button>
+          </span>
 
-        </form>
+          {!loading && (
+            <FaArrowRight />
+          )}
 
-        <p>
-          Don't have an account?{" "}
+        </button>
 
-          <Link to="/register">
-            Register
-          </Link>
-        </p>
+      </form>
 
-      </div>
+    </AuthLayout>
 
-    </div>
   );
 }

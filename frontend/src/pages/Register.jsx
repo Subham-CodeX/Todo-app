@@ -3,13 +3,23 @@ import {
 } from "react";
 
 import {
-  Link,
   useNavigate,
 } from "react-router-dom";
 
 import {
+  FaUser,
+  FaEnvelope,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaArrowRight,
+} from "react-icons/fa";
+
+import {
   useAuth,
 } from "../context/AuthContext";
+
+import AuthLayout from "../components/AuthLayout";
 
 export default function Register() {
 
@@ -19,6 +29,7 @@ export default function Register() {
   const {
     register,
   } = useAuth();
+
 
   const [
     name,
@@ -41,6 +52,16 @@ export default function Register() {
   ] = useState("");
 
   const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
+
+  const [
+    showConfirmPassword,
+    setShowConfirmPassword,
+  ] = useState(false);
+
+  const [
     error,
     setError,
   ] = useState("");
@@ -50,6 +71,11 @@ export default function Register() {
     setLoading,
   ] = useState(false);
 
+
+  // =====================================
+  // REGISTER
+  // =====================================
+
   const handleSubmit =
     async (e) => {
 
@@ -57,37 +83,83 @@ export default function Register() {
 
       setError("");
 
-      if (
-        password !==
-        confirmPassword
-      ) {
+
+      if (!name.trim()) {
+
         setError(
-          "Passwords do not match"
+          "Please enter your name."
         );
 
         return;
       }
+
+
+      if (!email.trim()) {
+
+        setError(
+          "Please enter your email."
+        );
+
+        return;
+      }
+
+
+      if (password.length < 6) {
+
+        setError(
+          "Password must be at least 6 characters."
+        );
+
+        return;
+      }
+
+
+      if (
+        password !==
+        confirmPassword
+      ) {
+
+        setError(
+          "Passwords do not match."
+        );
+
+        return;
+      }
+
 
       try {
 
         setLoading(true);
 
         await register(
-          name,
-          email,
+          name.trim(),
+          email.trim(),
           password
         );
 
+
+        /*
+         * New users must complete
+         * their TaskFlow profile.
+         */
+
         navigate(
-          "/profile/complete"
+          "/profile/complete",
+          {
+            replace: true,
+          }
         );
 
       } catch (error) {
 
+        console.error(
+          "Register Error:",
+          error
+        );
+
         setError(
-          error.response?.data
-            ?.message ||
-          "Registration failed"
+          error.response?.data?.message ||
+          "Registration failed. Please try again."
         );
 
       } finally {
@@ -95,119 +167,245 @@ export default function Register() {
         setLoading(false);
 
       }
+
     };
 
+
   return (
-    <div className="auth-page">
 
-      <div className="auth-card">
+    <AuthLayout mode="register">
 
-        <h1>
-          TaskFlow
-        </h1>
+      {/* =================================
+          HEADING
+      ================================= */}
+
+      <div className="auth-heading">
+
+        <p className="auth-heading-label">
+          GET STARTED
+        </p>
 
         <h2>
-          Create Account 🚀
+          Create your account 🚀
         </h2>
 
-        {error && (
-          <div className="auth-error">
-            {error}
-          </div>
-        )}
+        <p>
+          Start organizing your life
+          with TaskFlow.
+        </p>
 
-        <form
-          onSubmit={handleSubmit}
-        >
+      </div>
+
+
+      {/* =================================
+          ERROR
+      ================================= */}
+
+      {error && (
+
+        <div className="auth-error">
+
+          <span>
+            !
+          </span>
+
+          {error}
+
+        </div>
+
+      )}
+
+
+      {/* =================================
+          FORM
+      ================================= */}
+
+      <form
+        className="auth-form register-form"
+        onSubmit={handleSubmit}
+      >
+
+        {/* NAME */}
+
+        <div className="auth-field">
 
           <label>
             Name
           </label>
 
-          <input
-            type="text"
-            value={name}
-            onChange={(e) =>
-              setName(
-                e.target.value
-              )
-            }
-            placeholder="Your name"
-            required
-          />
+          <div className="auth-input-wrapper">
+
+            <FaUser />
+
+            <input
+              type="text"
+              value={name}
+              onChange={(e) =>
+                setName(
+                  e.target.value
+                )
+              }
+              placeholder="Your name"
+              autoComplete="name"
+            />
+
+          </div>
+
+        </div>
+
+
+        {/* EMAIL */}
+
+        <div className="auth-field">
 
           <label>
             Email
           </label>
 
-          <input
-            type="email"
-            value={email}
-            onChange={(e) =>
-              setEmail(
-                e.target.value
-              )
-            }
-            placeholder="your@email.com"
-            required
-          />
+          <div className="auth-input-wrapper">
+
+            <FaEnvelope />
+
+            <input
+              type="email"
+              value={email}
+              onChange={(e) =>
+                setEmail(
+                  e.target.value
+                )
+              }
+              placeholder="your@email.com"
+              autoComplete="email"
+            />
+
+          </div>
+
+        </div>
+
+
+        {/* PASSWORD */}
+
+        <div className="auth-field">
 
           <label>
             Password
           </label>
 
-          <input
-            type="password"
-            value={password}
-            onChange={(e) =>
-              setPassword(
-                e.target.value
-              )
-            }
-            placeholder="Minimum 6 characters"
-            required
-            minLength={6}
-          />
+          <div className="auth-input-wrapper">
+
+            <FaLock />
+
+            <input
+              type={
+                showPassword
+                  ? "text"
+                  : "password"
+              }
+              value={password}
+              onChange={(e) =>
+                setPassword(
+                  e.target.value
+                )
+              }
+              placeholder="Minimum 6 characters"
+              autoComplete="new-password"
+            />
+
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() =>
+                setShowPassword(
+                  (prev) => !prev
+                )
+              }
+            >
+              {showPassword ? (
+                <FaEyeSlash />
+              ) : (
+                <FaEye />
+              )}
+            </button>
+
+          </div>
+
+        </div>
+
+
+        {/* CONFIRM PASSWORD */}
+
+        <div className="auth-field">
 
           <label>
             Confirm Password
           </label>
 
-          <input
-            type="password"
-            value={
-              confirmPassword
-            }
-            onChange={(e) =>
-              setConfirmPassword(
-                e.target.value
-              )
-            }
-            placeholder="Confirm password"
-            required
-          />
+          <div className="auth-input-wrapper">
 
-          <button
-            type="submit"
-            disabled={loading}
-          >
+            <FaLock />
+
+            <input
+              type={
+                showConfirmPassword
+                  ? "text"
+                  : "password"
+              }
+              value={
+                confirmPassword
+              }
+              onChange={(e) =>
+                setConfirmPassword(
+                  e.target.value
+                )
+              }
+              placeholder="Confirm your password"
+              autoComplete="new-password"
+            />
+
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() =>
+                setShowConfirmPassword(
+                  (prev) => !prev
+                )
+              }
+            >
+              {showConfirmPassword ? (
+                <FaEyeSlash />
+              ) : (
+                <FaEye />
+              )}
+            </button>
+
+          </div>
+
+        </div>
+
+
+        {/* REGISTER */}
+
+        <button
+          type="submit"
+          className="auth-submit"
+          disabled={loading}
+        >
+
+          <span>
             {loading
-              ? "Creating..."
-              : "Register"}
-          </button>
+              ? "Creating account..."
+              : "Create Account"}
+          </span>
 
-        </form>
+          {!loading && (
+            <FaArrowRight />
+          )}
 
-        <p>
-          Already have an account?{" "}
+        </button>
 
-          <Link to="/login">
-            Login
-          </Link>
-        </p>
+      </form>
 
-      </div>
+    </AuthLayout>
 
-    </div>
   );
 }

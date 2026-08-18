@@ -1,0 +1,943 @@
+/* =====================================================
+   TASKFLOW AUTHENTICATION
+===================================================== */
+
+.auth-page {
+  min-height: 100vh;
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1.15fr)
+    minmax(420px, 0.85fr);
+
+  background: #f5f3f8;
+
+  overflow: hidden;
+}
+
+
+/* =====================================================
+   LEFT IMAGE PANEL
+===================================================== */
+
+.auth-visual {
+  position: relative;
+
+  min-height: 100vh;
+
+  padding: 55px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: space-between;
+
+  color: white;
+
+  overflow: hidden;
+
+  background-image:
+    url("/images/taskflow-auth.png");
+
+  background-size: cover;
+
+  background-position: center;
+}
+
+
+/* Dark purple overlay */
+
+.auth-visual-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(18, 12, 28, 0.94),
+      rgba(74, 37, 125, 0.72)
+    );
+
+  z-index: 0;
+}
+
+
+/* =====================================================
+   BRAND
+===================================================== */
+
+.auth-brand {
+  position: relative;
+
+  z-index: 2;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  font-size: 25px;
+
+  font-weight: 800;
+
+  letter-spacing: -0.5px;
+}
+
+
+.taskflow-logo {
+  width: 44px;
+
+  height: 44px;
+
+  flex-shrink: 0;
+
+  border-radius: 14px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7b2ff7,
+      #9333ea
+    );
+
+  color: white;
+
+  font-size: 22px;
+
+  font-weight: 900;
+
+  box-shadow:
+    0 12px 30px
+    rgba(123, 47, 247, 0.35);
+}
+
+
+/* =====================================================
+   HERO CONTENT
+===================================================== */
+
+.auth-hero-content {
+  position: relative;
+
+  z-index: 2;
+
+  max-width: 600px;
+}
+
+
+.auth-eyebrow {
+  margin: 0 0 18px;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 3px;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.7
+    );
+}
+
+
+.auth-hero-content {
+  position: absolute;
+
+  left: 50px;
+  right: 50px;
+
+  bottom: 55px;
+
+  z-index: 2;
+
+  text-align: center;
+}
+
+
+.auth-hero-content h6 {
+  margin: 0;
+  
+  font-size:
+    clamp(
+      32px,
+      4vw,
+      52px
+    );
+
+  line-height: 1.08;
+
+  letter-spacing: -2px;
+
+  font-weight: 700;
+
+  color: #ffffff;
+}
+
+
+.auth-hero-description {
+  max-width: 680px;
+
+  margin: 18px auto 0;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.82
+    );
+
+  font-size: 16px;
+
+  line-height: 1.65;
+}
+
+
+/* =====================================================
+   FEATURES
+===================================================== */
+
+.auth-feature-row {
+  position: relative;
+  z-index: 2;
+  bottom: -32px;
+
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+
+  flex-wrap: wrap;
+
+  margin-top: 32px;
+
+  font-size: 13px;
+
+  color: rgba(255, 255, 255, 0.72);
+}
+
+
+/* =====================================================
+   RIGHT FORM PANEL
+===================================================== */
+
+.auth-form-section {
+  min-height: 100vh;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 45px;
+
+  background: #ffffff;
+}
+
+
+.auth-form-container {
+  width: 100%;
+
+  max-width: 450px;
+}
+
+
+/* =====================================================
+   MOBILE BRAND
+===================================================== */
+
+.mobile-brand {
+  display: none;
+}
+
+
+/* =====================================================
+   HEADING
+===================================================== */
+
+.auth-heading {
+  margin-bottom: 30px;
+}
+
+
+.auth-heading-label {
+  margin: 0 0 9px;
+
+  color: #7b2ff7;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 2.5px;
+}
+
+
+.auth-heading h2 {
+  margin: 0;
+
+  color: #222;
+
+  font-size: 38px;
+
+  line-height: 1.1;
+
+  letter-spacing: -1.7px;
+}
+
+
+.auth-heading > p:last-child {
+  margin: 12px 0 0;
+
+  color: #777;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+}
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+.auth-error {
+  margin-bottom: 18px;
+
+  padding: 12px 14px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  border-radius: 11px;
+
+  border: 1px solid #ffd4d4;
+
+  background: #fff4f4;
+
+  color: #d83232;
+
+  font-size: 13px;
+}
+
+
+.auth-error span {
+  width: 20px;
+
+  height: 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #d83232;
+
+  color: white;
+
+  font-size: 12px;
+
+  font-weight: 800;
+}
+
+
+/* =====================================================
+   FORM
+===================================================== */
+
+.auth-form {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 20px;
+}
+
+
+/* =====================================================
+   FIELD
+===================================================== */
+
+.auth-field {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+
+.auth-field label {
+  color: #333;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+
+.auth-label-row {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+}
+
+
+.forgot-password {
+  border: none;
+
+  background: none;
+
+  padding: 0;
+
+  color: #7b2ff7;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   INPUT
+===================================================== */
+
+.auth-input-wrapper {
+  width: 100%;
+
+  height: 55px;
+
+  padding:
+    0 16px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  border:
+    1.5px solid
+    #e4e1ea;
+
+  border-radius: 15px;
+
+  background: #faf9fc;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+
+.auth-input-wrapper > svg {
+  flex-shrink: 0;
+
+  color: #999;
+
+  font-size: 14px;
+}
+
+
+.auth-input-wrapper:focus-within {
+  background: white;
+
+  border-color: #7b2ff7;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(
+      123,
+      47,
+      247,
+      0.08
+    );
+}
+
+
+.auth-input-wrapper input {
+  width: 100%;
+
+  min-width: 0;
+
+  border: none;
+
+  outline: none;
+
+  background: transparent;
+
+  color: #222;
+
+  font-size: 14px;
+}
+
+
+.auth-input-wrapper input::placeholder {
+  color: #aaa;
+}
+
+
+/* =====================================================
+   PASSWORD TOGGLE
+===================================================== */
+
+.password-toggle {
+  flex-shrink: 0;
+
+  padding: 4px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: none;
+
+  background: transparent;
+
+  color: #999;
+
+  cursor: pointer;
+}
+
+
+.password-toggle:hover {
+  color: #7b2ff7;
+}
+
+
+/* =====================================================
+   SUBMIT
+===================================================== */
+
+.auth-submit {
+  width: 100%;
+
+  height: 55px;
+
+  margin-top: 4px;
+
+  border: none;
+
+  border-radius: 15px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7b2ff7,
+      #9333ea
+    );
+
+  color: white;
+
+  font-size: 14px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 12px 25px
+    rgba(
+      123,
+      47,
+      247,
+      0.25
+    );
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.auth-submit:hover {
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 17px 32px
+    rgba(
+      123,
+      47,
+      247,
+      0.3
+    );
+}
+
+
+.auth-submit:active {
+  transform:
+    scale(0.98);
+}
+
+
+.auth-submit:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+/* =====================================================
+   LOGIN / REGISTER SWITCH
+===================================================== */
+
+.auth-switch {
+  margin-top: 27px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 6px;
+
+  color: #777;
+
+  font-size: 13px;
+}
+
+
+.auth-switch button {
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  color: #7b2ff7;
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+
+.auth-switch button:hover {
+  text-decoration: underline;
+}
+
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (max-width: 1000px) {
+
+  .auth-page {
+    grid-template-columns:
+      0.9fr
+      1.1fr;
+  }
+
+
+  .auth-visual {
+    padding: 40px;
+  }
+
+
+  .auth-hero-content h1 {
+    font-size: 48px;
+
+    letter-spacing: -2px;
+  }
+
+
+  .auth-feature-row {
+    flex-direction: column;
+
+    gap: 8px;
+  }
+
+
+  .auth-form-section {
+    padding: 35px;
+  }
+
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .auth-page {
+    display: block;
+
+    min-height: 100vh;
+
+    background:
+      #5b21b6;
+  }
+
+
+  /* Hide desktop image panel */
+
+  .auth-visual {
+    display: none;
+  }
+
+
+  /* Image becomes background */
+
+  .auth-form-section {
+
+    min-height: 100vh;
+
+    padding:
+      25px 17px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+      linear-gradient(
+        135deg,
+        rgba(
+          52,
+          24,
+          91,
+          0.82
+        ),
+        rgba(
+          91,
+          33,
+          182,
+          0.72
+        )
+      ),
+      url("/images/taskflow-auth.png");
+
+    background-size: cover;
+
+    background-position: center;
+  }
+
+
+  /* Floating white card */
+
+  .auth-form-container {
+
+    width: 100%;
+
+    max-width: 430px;
+
+    padding:
+      28px 22px 24px;
+
+    border-radius: 27px;
+
+    background:
+      rgba(
+        255,
+        255,
+        255,
+        0.97
+      );
+
+    box-shadow:
+      0 25px 70px
+      rgba(
+        0,
+        0,
+        0,
+        0.28
+      );
+  }
+
+
+  /* Mobile logo */
+
+  .mobile-brand {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    margin-bottom: 24px;
+
+    color: #262626;
+
+    font-size: 22px;
+
+    font-weight: 900;
+  }
+
+
+  .mobile-brand .taskflow-logo {
+
+    width: 38px;
+
+    height: 38px;
+
+    border-radius: 12px;
+
+    font-size: 19px;
+  }
+
+
+  .auth-heading {
+
+    margin-bottom: 23px;
+
+    text-align: center;
+  }
+
+
+  .auth-heading-label {
+
+    font-size: 10px;
+
+    letter-spacing: 2px;
+  }
+
+
+  .auth-heading h2 {
+
+    font-size: 28px;
+
+    letter-spacing: -1px;
+  }
+
+
+  .auth-heading > p:last-child {
+
+    font-size: 13px;
+  }
+
+
+  .auth-form {
+
+    gap: 16px;
+  }
+
+
+  .auth-field {
+
+    gap: 7px;
+  }
+
+
+  .auth-input-wrapper {
+
+    height: 52px;
+
+    border-radius: 14px;
+  }
+
+
+  .auth-submit {
+
+    height: 52px;
+
+    border-radius: 14px;
+
+    margin-top: 4px;
+  }
+
+
+  .auth-switch {
+
+    margin-top: 21px;
+
+    font-size: 12px;
+  }
+
+
+  .auth-switch button {
+
+    font-size: 12px;
+  }
+
+}
+
+
+/* =====================================================
+   SMALL PHONES
+===================================================== */
+
+@media (max-width: 380px) {
+
+  .auth-form-container {
+
+    padding:
+      23px 18px 21px;
+
+    border-radius: 23px;
+  }
+
+
+  .mobile-brand {
+
+    margin-bottom: 18px;
+  }
+
+
+  .auth-heading h2 {
+
+    font-size: 25px;
+  }
+
+
+  .auth-input-wrapper {
+
+    height: 49px;
+  }
+
+
+  .auth-submit {
+
+    height: 49px;
+  }
+
+}
