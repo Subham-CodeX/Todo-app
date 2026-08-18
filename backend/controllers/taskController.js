@@ -5,15 +5,59 @@ const Task = require("../models/Task");
 // ALLOWED TASK FIELDS
 // ==============================
 
-const getTaskData = (body) => ({
-  title: body.title,
-  description: body.description,
-  category: body.category,
-  priority: body.priority,
-  date: body.date,
-  startTime: body.startTime,
-  endTime: body.endTime,
-});
+const getTaskData = (body) => {
+
+  const data = {};
+
+  if (
+    body.title !== undefined
+  ) {
+    data.title = body.title;
+  }
+
+  if (
+    body.description !== undefined
+  ) {
+    data.description =
+      body.description;
+  }
+
+  if (
+    body.category !== undefined
+  ) {
+    data.category =
+      body.category;
+  }
+
+  if (
+    body.priority !== undefined
+  ) {
+    data.priority =
+      body.priority;
+  }
+
+  if (
+    body.date !== undefined
+  ) {
+    data.date = body.date;
+  }
+
+  if (
+    body.startTime !== undefined
+  ) {
+    data.startTime =
+      body.startTime;
+  }
+
+  if (
+    body.endTime !== undefined
+  ) {
+    data.endTime =
+      body.endTime;
+  }
+
+  return data;
+};
 
 // ==============================
 // CREATE TASK
@@ -110,8 +154,11 @@ exports.updateTask = async (
 ) => {
   try {
 
-    const { id } =
-      req.params;
+    const { id } = req.params;
+
+    // ==========================
+    // VALIDATE ID
+    // ==========================
 
     if (
       !mongoose.Types.ObjectId.isValid(id)
@@ -120,6 +167,29 @@ exports.updateTask = async (
         message: "Invalid Task ID",
       });
     }
+
+    // ==========================
+    // BUILD UPDATE DATA
+    // ==========================
+
+    const updateData =
+      getTaskData(req.body);
+
+    // ==========================
+    // COMPLETED
+    // ==========================
+
+    if (
+      typeof req.body.completed ===
+      "boolean"
+    ) {
+      updateData.completed =
+        req.body.completed;
+    }
+
+    // ==========================
+    // UPDATE ONLY USER'S TASK
+    // ==========================
 
     const task =
       await Task.findOneAndUpdate(
@@ -132,7 +202,7 @@ exports.updateTask = async (
         },
 
         {
-          $set: getTaskData(req.body),
+          $set: updateData,
         },
 
         {
@@ -141,16 +211,28 @@ exports.updateTask = async (
         }
       );
 
+    // ==========================
+    // NOT FOUND
+    // ==========================
+
     if (!task) {
       return res.status(404).json({
-        message:
-          "Task not found",
+        message: "Task not found",
       });
     }
+
+    // ==========================
+    // SUCCESS
+    // ==========================
 
     res.status(200).json(task);
 
   } catch (error) {
+
+    console.error(
+      "Update Task Error:",
+      error
+    );
 
     res.status(500).json({
       message: error.message,
