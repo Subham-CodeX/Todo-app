@@ -119,15 +119,6 @@ export function AuthProvider({
           }
         );
 
-      localStorage.setItem(
-        "taskflowToken",
-        response.data.token
-      );
-
-      setUser(
-        response.data.user
-      );
-
       return response.data;
     };
 

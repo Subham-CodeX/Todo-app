@@ -131,21 +131,21 @@ export default function Register() {
 
         setLoading(true);
 
-        await register(
-          name.trim(),
-          email.trim(),
-          password
-        );
-
-
-        /*
-         * New users must complete
-         * their TaskFlow profile.
-         */
+        const result =
+          await register(
+            name.trim(),
+            email.trim(),
+            password
+          );
 
         navigate(
-          "/profile/complete",
+          "/verify-email",
           {
+            state: {
+              email:
+                result.email ||
+                email.trim(),
+            },
             replace: true,
           }
         );

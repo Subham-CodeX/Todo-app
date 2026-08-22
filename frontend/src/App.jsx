@@ -18,6 +18,7 @@ import Notes from "./pages/Notes";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyEmail from "./pages/VerifyEmail";
 
 import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
@@ -58,6 +59,11 @@ function App() {
           <Route
             path="/register"
             element={<Register />}
+          />
+
+          <Route
+            path="/verify-email"
+            element={<VerifyEmail />}
           />
 
           {/* =====================
