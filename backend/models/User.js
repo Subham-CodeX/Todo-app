@@ -52,6 +52,16 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    passwordResetToken: {
+      type: String,
+      select: false,
+    },
+
+    passwordResetTokenExpires: {
+      type: Date,
+      select: false,
+    },
+
     phone: {
       type: String,
       default: "",

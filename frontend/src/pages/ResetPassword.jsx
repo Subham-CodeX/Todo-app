@@ -25,12 +25,29 @@ export default function ResetPassword() {
     useNavigate();
 
   const email =
-    location.state?.email ||
-    "";
+    location.state?.email || "";
+
+  // ==========================================
+  // STEP
+  // ==========================================
+
+  const [
+    step,
+    setStep,
+  ] = useState(1);
+
+  // ==========================================
+  // FORM
+  // ==========================================
 
   const [
     otp,
     setOtp,
+  ] = useState("");
+
+  const [
+    resetToken,
+    setResetToken,
   ] = useState("");
 
   const [
@@ -42,6 +59,10 @@ export default function ResetPassword() {
     confirmPassword,
     setConfirmPassword,
   ] = useState("");
+
+  // ==========================================
+  // UI
+  // ==========================================
 
   const [
     error,
@@ -59,25 +80,16 @@ export default function ResetPassword() {
   ] = useState(false);
 
   // ==========================================
-  // RESET PASSWORD
+  // VERIFY OTP
   // ==========================================
 
-  const handleSubmit =
+  const handleVerifyOTP =
     async (e) => {
 
       e.preventDefault();
 
       setError("");
       setSuccess("");
-
-      if (!email) {
-
-        setError(
-          "Email information is missing. Please start again."
-        );
-
-        return;
-      }
 
       if (
         !/^\d{6}$/.test(otp)
@@ -89,6 +101,78 @@ export default function ResetPassword() {
 
         return;
       }
+
+      try {
+
+        setLoading(true);
+
+        const response =
+          await API.post(
+            "/auth/verify-reset-otp",
+            {
+              email,
+              otp,
+            }
+          );
+
+        const token =
+          response.data.resetToken;
+
+        if (!token) {
+
+          setError(
+            "Reset token was not received. Please try again."
+          );
+
+          return;
+        }
+
+        // ==================================
+        // STORE TEMPORARY TOKEN IN MEMORY
+        // ==================================
+
+        setResetToken(token);
+
+        // ==================================
+        // MOVE TO PASSWORD STEP
+        // ==================================
+
+        setStep(2);
+
+        setSuccess(
+          "OTP verified successfully."
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Verify OTP Error:",
+          error
+        );
+
+        setError(
+          error.response?.data?.message ||
+          "Failed to verify OTP."
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+    };
+
+  // ==========================================
+  // RESET PASSWORD
+  // ==========================================
+
+  const handleResetPassword =
+    async (e) => {
+
+      e.preventDefault();
+
+      setError("");
+      setSuccess("");
 
       if (
         newPassword.length < 6
@@ -113,6 +197,15 @@ export default function ResetPassword() {
         return;
       }
 
+      if (!resetToken) {
+
+        setError(
+          "Reset session is invalid. Please start again."
+        );
+
+        return;
+      }
+
       try {
 
         setLoading(true);
@@ -121,10 +214,18 @@ export default function ResetPassword() {
           "/auth/reset-password",
           {
             email,
-            otp,
+
+            resetToken,
+
             newPassword,
           }
         );
+
+        // ==================================
+        // DELETE TOKEN FROM MEMORY
+        // ==================================
+
+        setResetToken("");
 
         setSuccess(
           "Password reset successfully! Redirecting to login..."
@@ -139,7 +240,7 @@ export default function ResetPassword() {
             }
           );
 
-        }, 1200);
+        }, 1500);
 
       } catch (error) {
 
@@ -186,7 +287,9 @@ export default function ResetPassword() {
         <button
           className="auth-submit"
           onClick={() =>
-            navigate("/forgot-password")
+            navigate(
+              "/forgot-password"
+            )
           }
         >
           Go to Forgot Password
@@ -196,6 +299,128 @@ export default function ResetPassword() {
     );
   }
 
+  // ==========================================
+  // STEP 1 — VERIFY OTP
+  // ==========================================
+
+  if (step === 1) {
+
+    return (
+
+      <AuthLayout mode="login">
+
+        <div className="auth-heading">
+
+          <p className="auth-heading-label">
+            VERIFY OTP
+          </p>
+
+          <h2>
+            Verify your email 🔐
+          </h2>
+
+          <p>
+            Enter the OTP sent to:
+          </p>
+
+          <strong>
+            {email}
+          </strong>
+
+        </div>
+
+        {error && (
+
+          <div className="auth-error">
+
+            <span>
+              !
+            </span>
+
+            {error}
+
+          </div>
+        )}
+
+        <form
+          className="auth-form"
+          onSubmit={handleVerifyOTP}
+        >
+
+          <div className="auth-field">
+
+            <label>
+              Verification OTP
+            </label>
+
+            <div className="auth-input-wrapper">
+
+              <span>
+                #
+              </span>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={otp}
+                onChange={(e) =>
+                  setOtp(
+                    e.target.value
+                      .replace(
+                        /\D/g,
+                        ""
+                      )
+                  )
+                }
+                placeholder="Enter 6-digit OTP"
+                autoComplete="one-time-code"
+              />
+
+            </div>
+
+          </div>
+
+          <button
+            type="submit"
+            className="auth-submit"
+            disabled={loading}
+          >
+
+            <span>
+              {loading
+                ? "Verifying..."
+                : "Verify OTP"}
+            </span>
+
+            {!loading && (
+              <FaArrowRight />
+            )}
+
+          </button>
+
+        </form>
+
+        <button
+          type="button"
+          className="forgot-password"
+          onClick={() =>
+            navigate(
+              "/forgot-password"
+            )
+          }
+        >
+          Request a new OTP
+        </button>
+
+      </AuthLayout>
+    );
+  }
+
+  // ==========================================
+  // STEP 2 — NEW PASSWORD
+  // ==========================================
+
   return (
 
     <AuthLayout mode="login">
@@ -203,7 +428,7 @@ export default function ResetPassword() {
       <div className="auth-heading">
 
         <p className="auth-heading-label">
-          RESET PASSWORD
+          NEW PASSWORD
         </p>
 
         <h2>
@@ -211,12 +436,9 @@ export default function ResetPassword() {
         </h2>
 
         <p>
-          Enter the OTP sent to:
+          Your OTP has been verified.
+          Create a new password for your account.
         </p>
-
-        <strong>
-          {email}
-        </strong>
 
       </div>
 
@@ -224,12 +446,13 @@ export default function ResetPassword() {
 
         <div className="auth-error">
 
-          <span>!</span>
+          <span>
+            !
+          </span>
 
           {error}
 
         </div>
-
       )}
 
       {success && (
@@ -237,49 +460,12 @@ export default function ResetPassword() {
         <div className="auth-success">
           {success}
         </div>
-
       )}
 
       <form
         className="auth-form"
-        onSubmit={handleSubmit}
+        onSubmit={handleResetPassword}
       >
-
-        {/* OTP */}
-
-        <div className="auth-field">
-
-          <label>
-            OTP
-          </label>
-
-          <div className="auth-input-wrapper">
-
-            <span>
-              #
-            </span>
-
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              value={otp}
-              onChange={(e) =>
-                setOtp(
-                  e.target.value
-                    .replace(
-                      /\D/g,
-                      ""
-                    )
-                )
-              }
-              placeholder="Enter 6-digit OTP"
-              autoComplete="one-time-code"
-            />
-
-          </div>
-
-        </div>
 
         {/* NEW PASSWORD */}
 
@@ -295,9 +481,7 @@ export default function ResetPassword() {
 
             <input
               type="password"
-              value={
-                newPassword
-              }
+              value={newPassword}
               onChange={(e) =>
                 setNewPassword(
                   e.target.value
@@ -350,7 +534,7 @@ export default function ResetPassword() {
           <span>
             {loading
               ? "Resetting..."
-              : "Reset Password"}
+              : "Set New Password"}
           </span>
 
           {!loading && (
@@ -360,18 +544,6 @@ export default function ResetPassword() {
         </button>
 
       </form>
-
-      <button
-        type="button"
-        className="forgot-password"
-        onClick={() =>
-          navigate(
-            "/forgot-password"
-          )
-        }
-      >
-        Request a new OTP
-      </button>
 
     </AuthLayout>
   );
