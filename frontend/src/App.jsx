@@ -20,6 +20,10 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
 
+import ForgotPassword from "./pages/ForgotPassword";
+
+import ResetPassword from "./pages/ResetPassword";
+
 import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
 import ChangePassword from "./pages/ChangePassword";
@@ -64,6 +68,20 @@ function App() {
           <Route
             path="/verify-email"
             element={<VerifyEmail />}
+          />
+
+          <Route
+            path="/forgot-password"
+            element={
+              <ForgotPassword />
+            }
+          />
+
+          <Route
+            path="/reset-password"
+            element={
+              <ResetPassword />
+            }
           />
 
           {/* =====================

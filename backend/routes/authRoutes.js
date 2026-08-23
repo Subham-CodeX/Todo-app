@@ -9,6 +9,9 @@ const {
   resendEmailOTP,
   login,
   getMe,
+  forgotPassword,
+  verifyResetOTP,
+  resetPassword,
 } = require(
   "../controllers/authController"
 );
@@ -62,6 +65,33 @@ router.get(
   "/me",
   protect,
   getMe
+);
+
+// ============================================
+// FORGOT PASSWORD
+// ============================================
+
+router.post(
+  "/forgot-password",
+  forgotPassword
+);
+
+// ============================================
+// VERIFY RESET OTP
+// ============================================
+
+router.post(
+  "/verify-reset-otp",
+  verifyResetOTP
+);
+
+// ============================================
+// RESET PASSWORD
+// ============================================
+
+router.post(
+  "/reset-password",
+  resetPassword
 );
 
 module.exports = router;
