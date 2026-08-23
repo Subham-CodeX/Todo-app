@@ -39,6 +39,25 @@ const createToken = (userId) => {
 };
 
 // ============================================
+// PASSWORD RESET SECURITY SETTINGS
+// ============================================
+
+const PASSWORD_RESET_OTP_COOLDOWN = 60 * 1000;
+// 60 seconds
+
+const PASSWORD_RESET_MAX_ATTEMPTS = 5;
+// 5 wrong OTP attempts
+
+const PASSWORD_RESET_BLOCK_TIME = 15 * 60 * 1000;
+// 15 minutes
+
+const PASSWORD_RESET_MAX_RESENDS = 5;
+// Maximum 5 OTP sends
+
+const PASSWORD_RESET_RESEND_WINDOW = 60 * 60 * 1000;
+// 1 hour
+
+// ============================================
 // REGISTER
 // ============================================
 
@@ -799,15 +818,140 @@ exports.forgotPassword = async (req, res) => {
     // ==============================
     // FIND USER
     // ==============================
-
     const user = await User.findOne({
       email: normalizedEmail,
-    });
+    }).select(
+      "+passwordResetOTPLastSentAt " +
+      "+passwordResetOTPAttempts " +
+      "+passwordResetOTPBlockedUntil " +
+      "+passwordResetOTPResendCount " +
+      "+passwordResetOTPResendWindowStart"
+    );
 
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "No account found with this email",
+      });
+    }
+
+    // ============================================
+    // CHECK OTP VERIFICATION BLOCK
+    // ============================================
+
+    if (
+      user.passwordResetOTPBlockedUntil &&
+      user.passwordResetOTPBlockedUntil > new Date()
+    ) {
+
+      const remainingMs =
+        user.passwordResetOTPBlockedUntil.getTime() -
+        Date.now();
+
+      const remainingMinutes =
+        Math.ceil(
+          remainingMs / 60000
+        );
+
+      return res.status(429).json({
+        success: false,
+        message:
+          `Too many incorrect OTP attempts. Please try again in ${remainingMinutes} minute(s).`,
+        retryAfter: Math.ceil(
+          remainingMs / 1000
+        ),
+      });
+    }
+
+    // ============================================
+    // OTP SEND COOLDOWN
+    // ============================================
+
+    if (user.passwordResetOTPLastSentAt) {
+
+      const elapsed =
+        Date.now() -
+        user.passwordResetOTPLastSentAt.getTime();
+
+      if (
+        elapsed <
+        PASSWORD_RESET_OTP_COOLDOWN
+      ) {
+
+        const remainingSeconds =
+          Math.ceil(
+            (
+              PASSWORD_RESET_OTP_COOLDOWN -
+              elapsed
+            ) / 1000
+          );
+
+        return res.status(429).json({
+          success: false,
+
+          message:
+            `Please wait ${remainingSeconds} seconds before requesting another OTP.`,
+
+          retryAfter:
+            remainingSeconds,
+        });
+      }
+    }
+
+    // ============================================
+    // RESEND WINDOW
+    // ============================================
+
+    const now = new Date();
+
+    if (
+      !user.passwordResetOTPResendWindowStart ||
+      (
+        now.getTime() -
+        user.passwordResetOTPResendWindowStart.getTime()
+      ) >
+      PASSWORD_RESET_RESEND_WINDOW
+    ) {
+
+      // Start a new one-hour window
+
+      user.passwordResetOTPResendWindowStart =
+        now;
+
+      user.passwordResetOTPResendCount = 0;
+    }
+
+    // ============================================
+    // MAX OTP SEND LIMIT
+    // ============================================
+
+    if (
+      user.passwordResetOTPResendCount >=
+      PASSWORD_RESET_MAX_RESENDS
+    ) {
+
+      const windowEnd =
+        user.passwordResetOTPResendWindowStart.getTime() +
+        PASSWORD_RESET_RESEND_WINDOW;
+
+      const remainingMs =
+        windowEnd - Date.now();
+
+      const remainingMinutes =
+        Math.ceil(
+          remainingMs / 60000
+        );
+
+      return res.status(429).json({
+        success: false,
+
+        message:
+          `Too many OTP requests. Please try again in ${remainingMinutes} minute(s).`,
+
+        retryAfter:
+          Math.ceil(
+            remainingMs / 1000
+          ),
       });
     }
 
@@ -829,13 +973,20 @@ exports.forgotPassword = async (req, res) => {
     // ==============================
 
     const otp = generateOTP();
-
     const hashedOTP = hashOTP(otp);
 
-    user.passwordResetOTP = hashedOTP;
+    user.passwordResetOTP =
+      hashedOTP;
 
     user.passwordResetOTPExpires =
       getOTPExpiry();
+
+    user.passwordResetOTPLastSentAt =
+      new Date();
+
+    user.passwordResetOTPResendCount += 1;
+    user.passwordResetOTPAttempts = 0;
+    user.passwordResetOTPBlockedUntil = null;
 
     await user.save();
 
@@ -1016,7 +1167,10 @@ exports.verifyResetOTP = async (
       await User.findOne({
         email: normalizedEmail,
       }).select(
-        "+passwordResetOTP +passwordResetOTPExpires"
+        "+passwordResetOTP " +
+        "+passwordResetOTPExpires " +
+        "+passwordResetOTPAttempts " +
+        "+passwordResetOTPBlockedUntil"
       );
 
     if (!user) {
@@ -1024,6 +1178,37 @@ exports.verifyResetOTP = async (
         success: false,
         message:
           "Account not found",
+      });
+    }
+
+    // ============================================
+    // CHECK OTP BLOCK
+    // ============================================
+
+    if (
+      user.passwordResetOTPBlockedUntil &&
+      user.passwordResetOTPBlockedUntil > new Date()
+    ) {
+
+      const remainingMs =
+        user.passwordResetOTPBlockedUntil.getTime() -
+        Date.now();
+
+      const remainingMinutes =
+        Math.ceil(
+          remainingMs / 60000
+        );
+
+      return res.status(429).json({
+        success: false,
+
+        message:
+          `Too many incorrect OTP attempts. Please try again in ${remainingMinutes} minute(s).`,
+
+        retryAfter:
+          Math.ceil(
+            remainingMs / 1000
+          ),
       });
     }
 
@@ -1077,10 +1262,54 @@ exports.verifyResetOTP = async (
       );
 
     if (!validOTP) {
+
+      user.passwordResetOTPAttempts += 1;
+
+      // ========================================
+      // MAX ATTEMPTS REACHED
+      // ========================================
+
+      if (
+        user.passwordResetOTPAttempts >=
+        PASSWORD_RESET_MAX_ATTEMPTS
+      ) {
+
+        user.passwordResetOTPBlockedUntil =
+          new Date(
+            Date.now() +
+            PASSWORD_RESET_BLOCK_TIME
+          );
+
+        // Invalidate OTP
+
+        user.passwordResetOTP = "";
+
+        user.passwordResetOTPExpires = null;
+
+        await user.save();
+
+        return res.status(429).json({
+          success: false,
+
+          message:
+            "Too many incorrect OTP attempts. Password reset has been temporarily blocked for 15 minutes.",
+
+          retryAfter:
+            PASSWORD_RESET_BLOCK_TIME / 1000,
+        });
+      }
+
+      await user.save();
+
+      const remainingAttempts =
+        PASSWORD_RESET_MAX_ATTEMPTS -
+        user.passwordResetOTPAttempts;
+
       return res.status(400).json({
         success: false,
+
         message:
-          "Invalid OTP",
+          `Invalid OTP. ${remainingAttempts} attempt(s) remaining.`,
       });
     }
 
@@ -1109,10 +1338,372 @@ exports.verifyResetOTP = async (
     // ==========================================
 
     user.passwordResetOTP = "";
-
     user.passwordResetOTPExpires = null;
 
+    // ==========================================
+    // RESET OTP SECURITY STATE
+    // ==========================================
+
+    user.passwordResetOTPAttempts = 0;
+    user.passwordResetOTPBlockedUntil = null;
+
     await user.save();
+
+    // ============================================
+    // RESEND PASSWORD RESET OTP
+    // ============================================
+
+    exports.resendResetOTP = async (
+      req,
+      res
+    ) => {
+      try {
+
+        const {
+          email,
+        } = req.body;
+
+        // ==============================
+        // VALIDATION
+        // ==============================
+
+        if (!email) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Email is required",
+          });
+        }
+
+        const normalizedEmail =
+          email.toLowerCase().trim();
+
+        // ==============================
+        // FIND USER
+        // ==============================
+
+        const user =
+          await User.findOne({
+            email: normalizedEmail,
+          }).select(
+            "+passwordResetOTPLastSentAt " +
+            "+passwordResetOTPAttempts " +
+            "+passwordResetOTPBlockedUntil " +
+            "+passwordResetOTPResendCount " +
+            "+passwordResetOTPResendWindowStart"
+          );
+
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message:
+              "No account found with this email",
+          });
+        }
+
+        // ==============================
+        // EMAIL VERIFIED?
+        // ==============================
+
+        if (!user.emailVerified) {
+          return res.status(403).json({
+            success: false,
+            message:
+              "Please verify your email first.",
+          });
+        }
+
+        // ==============================
+        // CHECK BLOCK
+        // ==============================
+
+        if (
+          user.passwordResetOTPBlockedUntil &&
+          user.passwordResetOTPBlockedUntil > new Date()
+        ) {
+
+          const remainingMs =
+            user.passwordResetOTPBlockedUntil.getTime() -
+            Date.now();
+
+          const remainingMinutes =
+            Math.ceil(
+              remainingMs / 60000
+            );
+
+          return res.status(429).json({
+            success: false,
+
+            message:
+              `Too many incorrect OTP attempts. Please try again in ${remainingMinutes} minute(s).`,
+
+            retryAfter:
+              Math.ceil(
+                remainingMs / 1000
+              ),
+          });
+        }
+
+        // ==============================
+        // COOLDOWN
+        // ==============================
+
+        if (
+          user.passwordResetOTPLastSentAt
+        ) {
+
+          const elapsed =
+            Date.now() -
+            user.passwordResetOTPLastSentAt.getTime();
+
+          if (
+            elapsed <
+            PASSWORD_RESET_OTP_COOLDOWN
+          ) {
+
+            const remainingSeconds =
+              Math.ceil(
+                (
+                  PASSWORD_RESET_OTP_COOLDOWN -
+                  elapsed
+                ) / 1000
+              );
+
+            return res.status(429).json({
+              success: false,
+
+              message:
+                `Please wait ${remainingSeconds} seconds before requesting another OTP.`,
+
+              retryAfter:
+                remainingSeconds,
+            });
+          }
+        }
+
+        // ==============================
+        // RESEND WINDOW
+        // ==============================
+
+        const now = new Date();
+
+        if (
+          !user.passwordResetOTPResendWindowStart ||
+          (
+            now.getTime() -
+            user.passwordResetOTPResendWindowStart.getTime()
+          ) >
+          PASSWORD_RESET_RESEND_WINDOW
+        ) {
+
+          user.passwordResetOTPResendWindowStart =
+            now;
+
+          user.passwordResetOTPResendCount = 0;
+        }
+
+        // ==============================
+        // MAX RESENDS
+        // ==============================
+
+        if (
+          user.passwordResetOTPResendCount >=
+          PASSWORD_RESET_MAX_RESENDS
+        ) {
+
+          const windowEnd =
+            user.passwordResetOTPResendWindowStart.getTime() +
+            PASSWORD_RESET_RESEND_WINDOW;
+
+          const remainingMs =
+            windowEnd - Date.now();
+
+          const remainingMinutes =
+            Math.ceil(
+              remainingMs / 60000
+            );
+
+          return res.status(429).json({
+            success: false,
+
+            message:
+              `Too many OTP requests. Please try again in ${remainingMinutes} minute(s).`,
+
+            retryAfter:
+              Math.ceil(
+                remainingMs / 1000
+              ),
+          });
+        }
+
+        // ==============================
+        // GENERATE NEW OTP
+        // ==============================
+
+        const otp =
+          generateOTP();
+
+        const hashedOTP =
+          hashOTP(otp);
+
+        user.passwordResetOTP =
+          hashedOTP;
+
+        user.passwordResetOTPExpires =
+          getOTPExpiry();
+
+        user.passwordResetOTPLastSentAt =
+          new Date();
+
+        user.passwordResetOTPResendCount += 1;
+
+        user.passwordResetOTPAttempts = 0;
+
+        user.passwordResetOTPBlockedUntil =
+          null;
+
+        // A new OTP invalidates old reset token
+
+        user.passwordResetToken = "";
+
+        user.passwordResetTokenExpires =
+          null;
+
+        await user.save();
+
+        // ==============================
+        // SEND EMAIL
+        // ==============================
+
+        await sendEmail({
+          to: user.email,
+
+          name: user.name,
+
+          subject:
+            "Your new TaskFlow Password Reset OTP",
+
+          textContent:
+    `Hello ${user.name},
+
+    Your new TaskFlow password reset code is:
+
+    ${otp}
+
+    This code will expire in 10 minutes.
+
+    If you did not request a password reset, please ignore this email.
+
+    TaskFlow`,
+
+          htmlContent: `
+            <div style="
+              font-family: Arial, sans-serif;
+              max-width: 600px;
+              margin: auto;
+              padding: 30px;
+              background: #f8f8f8;
+            ">
+
+              <div style="
+                background: #ffffff;
+                padding: 30px;
+                border-radius: 16px;
+              ">
+
+                <h1 style="
+                  margin-top: 0;
+                  color: #111111;
+                ">
+                  New Password Reset Code 🔐
+                </h1>
+
+                <p>
+                  Hello ${user.name},
+                </p>
+
+                <p>
+                  Your new TaskFlow password reset code is:
+                </p>
+
+                <div style="
+                  margin: 30px 0;
+                  text-align: center;
+                ">
+
+                  <div style="
+                    display: inline-block;
+                    padding: 18px 30px;
+                    background: #111111;
+                    color: #ffffff;
+                    border-radius: 12px;
+                    font-size: 32px;
+                    font-weight: bold;
+                    letter-spacing: 8px;
+                  ">
+                    ${otp}
+                  </div>
+
+                </div>
+
+                <p>
+                  This code will expire in
+                  <strong>10 minutes</strong>.
+                </p>
+
+                <p style="
+                  color: #777777;
+                  font-size: 13px;
+                ">
+                  If you did not request a password reset,
+                  you can safely ignore this email.
+                </p>
+
+                <hr />
+
+                <p style="
+                  color: #999999;
+                  font-size: 12px;
+                ">
+                  TaskFlow — Stay organized. Stay focused.
+                </p>
+
+              </div>
+
+            </div>
+          `,
+        });
+
+        // ==============================
+        // RESPONSE
+        // ==============================
+
+        res.status(200).json({
+          success: true,
+
+          message:
+            "A new password reset OTP has been sent to your email.",
+
+          retryAfter:
+            PASSWORD_RESET_OTP_COOLDOWN,
+        });
+
+      } catch (error) {
+
+        console.error(
+          "Resend Reset OTP Error:",
+          error
+        );
+
+        res.status(500).json({
+          success: false,
+
+          message:
+            error.message ||
+            "Failed to resend password reset OTP",
+        });
+      }
+    };
 
     // ==========================================
     // RETURN TEMPORARY RESET TOKEN

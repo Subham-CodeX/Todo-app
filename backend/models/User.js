@@ -62,6 +62,36 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    passwordResetOTPLastSentAt: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
+    passwordResetOTPAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+
+    passwordResetOTPBlockedUntil: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
+    passwordResetOTPResendCount: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+
+    passwordResetOTPResendWindowStart: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
     phone: {
       type: String,
       default: "",

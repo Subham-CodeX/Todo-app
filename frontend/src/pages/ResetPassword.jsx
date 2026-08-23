@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -80,6 +81,50 @@ export default function ResetPassword() {
   ] = useState(false);
 
   // ==========================================
+  // RESEND COOLDOWN
+  // ==========================================
+
+  const [
+    resendCooldown,
+    setResendCooldown,
+  ] = useState(0);
+
+  // ==========================================
+  // RESEND COUNTDOWN
+  // ==========================================
+
+  useEffect(() => {
+
+    if (resendCooldown <= 0) {
+      return;
+    }
+
+    const timer =
+      setInterval(() => {
+
+        setResendCooldown(
+          (prev) => {
+
+            if (prev <= 1) {
+
+              clearInterval(timer);
+
+              return 0;
+            }
+
+            return prev - 1;
+          }
+        );
+
+      }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+
+  }, [resendCooldown]);
+
+  // ==========================================
   // VERIFY OTP
   // ==========================================
 
@@ -90,6 +135,10 @@ export default function ResetPassword() {
 
       setError("");
       setSuccess("");
+
+      // ======================================
+      // VALIDATE OTP
+      // ======================================
 
       if (
         !/^\d{6}$/.test(otp)
@@ -118,6 +167,10 @@ export default function ResetPassword() {
         const token =
           response.data.resetToken;
 
+        // ====================================
+        // CHECK RESET TOKEN
+        // ====================================
+
         if (!token) {
 
           setError(
@@ -127,15 +180,15 @@ export default function ResetPassword() {
           return;
         }
 
-        // ==================================
+        // ====================================
         // STORE TEMPORARY TOKEN IN MEMORY
-        // ==================================
+        // ====================================
 
         setResetToken(token);
 
-        // ==================================
+        // ====================================
         // MOVE TO PASSWORD STEP
-        // ==================================
+        // ====================================
 
         setStep(2);
 
@@ -163,6 +216,105 @@ export default function ResetPassword() {
     };
 
   // ==========================================
+  // RESEND OTP
+  // ==========================================
+
+  const handleResendOTP =
+    async () => {
+
+      // ======================================
+      // PREVENT MULTIPLE REQUESTS
+      // ======================================
+
+      if (
+        resendCooldown > 0 ||
+        loading
+      ) {
+
+        return;
+      }
+
+      setError("");
+      setSuccess("");
+
+      try {
+
+        setLoading(true);
+
+        const response =
+          await API.post(
+            "/auth/resend-reset-otp",
+            {
+              email,
+            }
+          );
+
+        // ====================================
+        // CLEAR OLD OTP
+        // ====================================
+
+        setOtp("");
+
+        // ====================================
+        // RESET SUCCESS MESSAGE
+        // ====================================
+
+        setSuccess(
+          "A new OTP has been sent to your email."
+        );
+
+        // ====================================
+        // START COOLDOWN
+        // ====================================
+
+        const retryAfter =
+          Number(
+            response.data.retryAfter
+          ) || 60;
+
+        setResendCooldown(
+          retryAfter
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Resend OTP Error:",
+          error
+        );
+
+        // ====================================
+        // BACKEND RATE LIMIT
+        // ====================================
+
+        const retryAfter =
+          Number(
+            error.response?.data?.retryAfter
+          );
+
+        if (
+          retryAfter &&
+          retryAfter > 0
+        ) {
+
+          setResendCooldown(
+            retryAfter
+          );
+        }
+
+        setError(
+          error.response?.data?.message ||
+          "Failed to resend OTP."
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+    };
+
+  // ==========================================
   // RESET PASSWORD
   // ==========================================
 
@@ -173,6 +325,10 @@ export default function ResetPassword() {
 
       setError("");
       setSuccess("");
+
+      // ======================================
+      // PASSWORD LENGTH
+      // ======================================
 
       if (
         newPassword.length < 6
@@ -185,6 +341,10 @@ export default function ResetPassword() {
         return;
       }
 
+      // ======================================
+      // CONFIRM PASSWORD
+      // ======================================
+
       if (
         newPassword !==
         confirmPassword
@@ -196,6 +356,10 @@ export default function ResetPassword() {
 
         return;
       }
+
+      // ======================================
+      // RESET TOKEN CHECK
+      // ======================================
 
       if (!resetToken) {
 
@@ -221,15 +385,27 @@ export default function ResetPassword() {
           }
         );
 
-        // ==================================
+        // ====================================
         // DELETE TOKEN FROM MEMORY
-        // ==================================
+        // ====================================
 
         setResetToken("");
+
+        // ====================================
+        // CLEAR PASSWORD FIELDS
+        // ====================================
+
+        setNewPassword("");
+
+        setConfirmPassword("");
 
         setSuccess(
           "Password reset successfully! Redirecting to login..."
         );
+
+        // ====================================
+        // REDIRECT TO LOGIN
+        // ====================================
 
         setTimeout(() => {
 
@@ -329,6 +505,10 @@ export default function ResetPassword() {
 
         </div>
 
+        {/* ==================================
+            ERROR MESSAGE
+        ================================== */}
+
         {error && (
 
           <div className="auth-error">
@@ -341,6 +521,23 @@ export default function ResetPassword() {
 
           </div>
         )}
+
+        {/* ==================================
+            SUCCESS MESSAGE
+        ================================== */}
+
+        {success && (
+
+          <div className="auth-success">
+
+            {success}
+
+          </div>
+        )}
+
+        {/* ==================================
+            OTP FORM
+        ================================== */}
 
         <form
           className="auth-form"
@@ -381,16 +578,25 @@ export default function ResetPassword() {
 
           </div>
 
+          {/* ==================================
+              VERIFY BUTTON
+          ================================== */}
+
           <button
             type="submit"
             className="auth-submit"
-            disabled={loading}
+            disabled={
+              loading ||
+              otp.length !== 6
+            }
           >
 
             <span>
+
               {loading
                 ? "Verifying..."
                 : "Verify OTP"}
+
             </span>
 
             {!loading && (
@@ -401,16 +607,26 @@ export default function ResetPassword() {
 
         </form>
 
+        {/* ==================================
+            RESEND OTP
+        ================================== */}
+
         <button
           type="button"
           className="forgot-password"
-          onClick={() =>
-            navigate(
-              "/forgot-password"
-            )
+          onClick={
+            handleResendOTP
+          }
+          disabled={
+            resendCooldown > 0 ||
+            loading
           }
         >
-          Request a new OTP
+
+          {resendCooldown > 0
+            ? `Resend OTP in ${resendCooldown}s`
+            : "Resend OTP"}
+
         </button>
 
       </AuthLayout>
@@ -442,6 +658,10 @@ export default function ResetPassword() {
 
       </div>
 
+      {/* ======================================
+          ERROR MESSAGE
+      ====================================== */}
+
       {error && (
 
         <div className="auth-error">
@@ -455,19 +675,33 @@ export default function ResetPassword() {
         </div>
       )}
 
+      {/* ======================================
+          SUCCESS MESSAGE
+      ====================================== */}
+
       {success && (
 
         <div className="auth-success">
+
           {success}
+
         </div>
       )}
 
+      {/* ======================================
+          RESET PASSWORD FORM
+      ====================================== */}
+
       <form
         className="auth-form"
-        onSubmit={handleResetPassword}
+        onSubmit={
+          handleResetPassword
+        }
       >
 
-        {/* NEW PASSWORD */}
+        {/* ====================================
+            NEW PASSWORD
+        ==================================== */}
 
         <div className="auth-field">
 
@@ -481,7 +715,9 @@ export default function ResetPassword() {
 
             <input
               type="password"
-              value={newPassword}
+              value={
+                newPassword
+              }
               onChange={(e) =>
                 setNewPassword(
                   e.target.value
@@ -495,7 +731,9 @@ export default function ResetPassword() {
 
         </div>
 
-        {/* CONFIRM PASSWORD */}
+        {/* ====================================
+            CONFIRM PASSWORD
+        ==================================== */}
 
         <div className="auth-field">
 
@@ -525,6 +763,10 @@ export default function ResetPassword() {
 
         </div>
 
+        {/* ====================================
+            RESET BUTTON
+        ==================================== */}
+
         <button
           type="submit"
           className="auth-submit"
@@ -532,9 +774,11 @@ export default function ResetPassword() {
         >
 
           <span>
+
             {loading
               ? "Resetting..."
               : "Set New Password"}
+
           </span>
 
           {!loading && (

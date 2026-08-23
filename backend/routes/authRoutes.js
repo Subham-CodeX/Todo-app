@@ -12,6 +12,7 @@ const {
   forgotPassword,
   verifyResetOTP,
   resetPassword,
+  resendResetOTP,
 } = require(
   "../controllers/authController"
 );
@@ -83,6 +84,15 @@ router.post(
 router.post(
   "/verify-reset-otp",
   verifyResetOTP
+);
+
+// ============================================
+// RESEND PASSWORD RESET OTP
+// ============================================
+
+router.post(
+  "/resend-reset-otp",
+  resendResetOTP
 );
 
 // ============================================
