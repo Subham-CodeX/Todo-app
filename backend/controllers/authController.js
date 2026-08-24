@@ -37,24 +37,35 @@ const createToken = (userId) => {
     }
   );
 };
-
 // ============================================
 // PASSWORD RESET SECURITY SETTINGS
 // ============================================
 
 const PASSWORD_RESET_OTP_COOLDOWN = 60 * 1000;
 // 60 seconds
-
 const PASSWORD_RESET_MAX_ATTEMPTS = 5;
 // 5 wrong OTP attempts
-
 const PASSWORD_RESET_BLOCK_TIME = 15 * 60 * 1000;
 // 15 minutes
-
 const PASSWORD_RESET_MAX_RESENDS = 5;
 // Maximum 5 OTP sends
-
 const PASSWORD_RESET_RESEND_WINDOW = 60 * 60 * 1000;
+// 1 hour
+
+// ============================================
+// EMAIL VERIFICATION OTP SECURITY
+// ============================================
+
+const EMAIL_VERIFICATION_OTP_COOLDOWN =
+  60 * 1000;
+// 60 seconds
+
+const EMAIL_VERIFICATION_MAX_RESENDS =
+  5;
+// Maximum 5 OTP sends
+
+const EMAIL_VERIFICATION_RESEND_WINDOW =
+  60 * 60 * 1000;
 // 1 hour
 
 // ============================================
@@ -177,16 +188,18 @@ exports.register = async (
     // SEND OTP EMAIL
     // ==============================
 
-    await sendEmail({
-      to: normalizedEmail,
+try {
 
-      name: user.name,
+  await sendEmail({
+    to: normalizedEmail,
 
-      subject:
-        "Verify your TaskFlow email",
+    name: user.name,
 
-      textContent:
-        `Hello ${user.name},
+    subject:
+      "Verify your TaskFlow email",
+
+    textContent:
+      `Hello ${user.name},
 
 Your TaskFlow verification code is:
 
@@ -198,7 +211,7 @@ If you did not create a TaskFlow account, please ignore this email.
 
 TaskFlow`,
 
-      htmlContent: `
+    htmlContent: `
         <div style="
           font-family: Arial, sans-serif;
           max-width: 600px;
@@ -276,7 +289,29 @@ TaskFlow`,
 
         </div>
       `,
-    });
+  });
+
+} catch (emailError) {
+
+  console.error(
+    "Registration Email Error:",
+    emailError
+  );
+
+  // ============================================
+  // ROLLBACK USER CREATION
+  // ============================================
+
+  await User.findByIdAndDelete(
+    user._id
+  );
+
+  return res.status(500).json({
+    success: false,
+    message:
+      "Registration failed because the verification email could not be sent. Please try again.",
+  });
+}
 
     // ==============================
     // DO NOT CREATE JWT HERE
@@ -482,6 +517,10 @@ exports.resendEmailOTP = async (
       email,
     } = req.body;
 
+    // ==============================
+    // VALIDATION
+    // ==============================
+
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -493,10 +532,20 @@ exports.resendEmailOTP = async (
     const normalizedEmail =
       email.toLowerCase().trim();
 
+    // ==============================
+    // FIND USER
+    // ==============================
+
     const user =
       await User.findOne({
         email: normalizedEmail,
-      });
+      }).select(
+        "+emailVerificationOTP " +
+        "+emailVerificationOTPExpires " +
+        "+emailVerificationOTPLastSentAt " +
+        "+emailVerificationOTPResendCount " +
+        "+emailVerificationOTPResendWindowStart"
+      );
 
     if (!user) {
       return res.status(404).json({
@@ -506,6 +555,10 @@ exports.resendEmailOTP = async (
       });
     }
 
+    // ==============================
+    // ALREADY VERIFIED
+    // ==============================
+
     if (user.emailVerified) {
       return res.status(400).json({
         success: false,
@@ -514,8 +567,101 @@ exports.resendEmailOTP = async (
       });
     }
 
+    // ============================================
+    // CHECK RESEND WINDOW
+    // ============================================
+
+    const now = new Date();
+
+    if (
+      !user.emailVerificationOTPResendWindowStart ||
+      (
+        now.getTime() -
+        user.emailVerificationOTPResendWindowStart.getTime()
+      ) >
+      EMAIL_VERIFICATION_RESEND_WINDOW
+    ) {
+
+      user.emailVerificationOTPResendWindowStart =
+        now;
+
+      user.emailVerificationOTPResendCount =
+        0;
+    }
+
+    // ============================================
+    // CHECK MAX RESENDS
+    // ============================================
+
+    if (
+      user.emailVerificationOTPResendCount >=
+      EMAIL_VERIFICATION_MAX_RESENDS
+    ) {
+
+      const windowEnd =
+        user.emailVerificationOTPResendWindowStart.getTime() +
+        EMAIL_VERIFICATION_RESEND_WINDOW;
+
+      const remainingMs =
+        windowEnd - Date.now();
+
+      const remainingMinutes =
+        Math.ceil(
+          remainingMs / 60000
+        );
+
+      return res.status(429).json({
+        success: false,
+
+        message:
+          `Too many OTP requests. Please try again in ${remainingMinutes} minute(s).`,
+
+        retryAfter:
+          Math.ceil(
+            remainingMs / 1000
+          ),
+      });
+    }
+
+    // ============================================
+    // CHECK 60 SECOND COOLDOWN
+    // ============================================
+
+    if (
+      user.emailVerificationOTPLastSentAt
+    ) {
+
+      const elapsed =
+        Date.now() -
+        user.emailVerificationOTPLastSentAt.getTime();
+
+      if (
+        elapsed <
+        EMAIL_VERIFICATION_OTP_COOLDOWN
+      ) {
+
+        const remainingSeconds =
+          Math.ceil(
+            (
+              EMAIL_VERIFICATION_OTP_COOLDOWN -
+              elapsed
+            ) / 1000
+          );
+
+        return res.status(429).json({
+          success: false,
+
+          message:
+            `Please wait ${remainingSeconds} seconds before requesting another OTP.`,
+
+          retryAfter:
+            remainingSeconds,
+        });
+      }
+    }
+
     // ==============================
-    // NEW OTP
+    // GENERATE NEW OTP
     // ==============================
 
     const otp =
@@ -530,22 +676,30 @@ exports.resendEmailOTP = async (
     user.emailVerificationOTPExpires =
       getOTPExpiry();
 
+    user.emailVerificationOTPLastSentAt =
+      new Date();
+
+    user.emailVerificationOTPResendCount +=
+      1;
+
     await user.save();
 
     // ==============================
     // SEND EMAIL
     // ==============================
 
-    await sendEmail({
-      to: user.email,
+    try {
 
-      name: user.name,
+      await sendEmail({
+        to: user.email,
 
-      subject:
-        "Your new TaskFlow verification code",
+        name: user.name,
 
-      textContent:
-        `Hello ${user.name},
+        subject:
+          "Your new TaskFlow verification code",
+
+        textContent:
+          `Hello ${user.name},
 
 Your new TaskFlow verification code is:
 
@@ -555,54 +709,95 @@ This code will expire in 10 minutes.
 
 TaskFlow`,
 
-      htmlContent: `
-        <div style="
-          font-family: Arial, sans-serif;
-          max-width: 600px;
-          margin: auto;
-          padding: 30px;
-        ">
-
-          <h2>
-            TaskFlow Email Verification
-          </h2>
-
-          <p>
-            Hello ${user.name},
-          </p>
-
-          <p>
-            Your new verification code is:
-          </p>
-
+        htmlContent: `
           <div style="
-            margin: 25px 0;
-            padding: 18px;
-            text-align: center;
-            font-size: 30px;
-            font-weight: bold;
-            letter-spacing: 8px;
-            background: #111111;
-            color: #ffffff;
-            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: auto;
+            padding: 30px;
           ">
-            ${otp}
+
+            <h2>
+              TaskFlow Email Verification
+            </h2>
+
+            <p>
+              Hello ${user.name},
+            </p>
+
+            <p>
+              Your new verification code is:
+            </p>
+
+            <div style="
+              margin: 25px 0;
+              padding: 18px;
+              text-align: center;
+              font-size: 30px;
+              font-weight: bold;
+              letter-spacing: 8px;
+              background: #111111;
+              color: #ffffff;
+              border-radius: 10px;
+            ">
+              ${otp}
+            </div>
+
+            <p>
+              This code expires in
+              <strong>10 minutes</strong>.
+            </p>
+
           </div>
+        `,
+      });
 
-          <p>
-            This code expires in
-            <strong>10 minutes</strong>.
-          </p>
+    } catch (emailError) {
 
-        </div>
-      `,
-    });
+      console.error(
+        "Resend Verification Email Error:",
+        emailError
+      );
 
-    res.status(200).json({
+      // ============================================
+      // ROLLBACK OTP STATE
+      // ============================================
+
+      user.emailVerificationOTP = "";
+      user.emailVerificationOTPExpires = null;
+
+      // Don't consume the resend attempt
+      user.emailVerificationOTPResendCount =
+        Math.max(
+          0,
+          user.emailVerificationOTPResendCount - 1
+        );
+
+      user.emailVerificationOTPLastSentAt =
+        null;
+
+      await user.save();
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Verification email could not be sent. Please try again later.",
+      });
+    }
+
+    // ==============================
+    // SUCCESS
+    // ==============================
+
+    return res.status(200).json({
       success: true,
 
       message:
         "A new verification OTP has been sent to your email.",
+
+      retryAfter:
+        EMAIL_VERIFICATION_OTP_COOLDOWN /
+        1000,
     });
 
   } catch (error) {
@@ -612,7 +807,7 @@ TaskFlow`,
       error
     );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message:
         error.message ||

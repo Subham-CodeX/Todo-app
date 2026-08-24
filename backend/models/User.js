@@ -33,6 +33,24 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    emailVerificationOTPLastSentAt: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
+    emailVerificationOTPResendCount: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+
+    emailVerificationOTPResendWindowStart: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
     password: {
       type: String,
       required: true,
