@@ -18,7 +18,6 @@
   padding-top: 45px;
 }
 
-
 /* ========================================
    HANGER
 ======================================== */
@@ -27,21 +26,15 @@
   position: absolute;
 
   top: 0;
-
   left: 50%;
-
   transform:
     translateX(-50%);
 
   width: 235px;
-
   height: 55px;
-
   pointer-events: none;
-
   z-index: 2;
 }
-
 
 /* ========================================
    PIN
@@ -58,9 +51,7 @@
     translateX(-50%);
 
   width: 18px;
-
   height: 18px;
-
   border-radius: 50%;
 
   background:
@@ -81,35 +72,24 @@
   content: "";
 
   position: absolute;
-
   left: 50%;
-
   top: 13px;
-
   transform:
     translateX(-50%);
 
   width: 5px;
-
   height: 12px;
-
   border-radius: 0 0 5px 5px;
-
   background: #5a32bd;
 }
-
 
 /* Small highlight */
 
 .sticky-pin span {
   position: absolute;
-
   width: 5px;
-
   height: 5px;
-
   border-radius: 50%;
-
   background: rgba(
     255,
     255,
@@ -118,10 +98,8 @@
   );
 
   top: 3px;
-
   left: 4px;
 }
-
 
 /* ========================================
    STRINGS
@@ -131,7 +109,6 @@
   position: absolute;
 
   top: 13px;
-
   width: 2px;
 
   height: 43px;
@@ -179,9 +156,9 @@
   min-height: 175px;
 
   padding:
+    28px
     25px
-    22px
-    20px;
+    24px;
 
   border-radius:
     5px
@@ -443,7 +420,6 @@
   z-index: 10;
 }
 
-
 /* ========================================
    DOUBLE CLICK HINT
 ======================================== */
@@ -452,19 +428,12 @@
   position: absolute;
 
   left: 0;
-
   right: 0;
-
   bottom: 8px;
-
   text-align: center;
-
   font-size: 9px;
-
   color: #b4acba;
-
   opacity: 0;
-
   transition:
     opacity 0.2s ease;
 }
@@ -473,7 +442,6 @@
 .sticky-hint {
   opacity: 1;
 }
-
 
 /* ========================================
    MOBILE
@@ -496,4 +464,97 @@
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* =========================================================
+   STICKY NOTE — DESKTOP
+========================================================= */
+
+@media (min-width: 768px) {
+
+  .sticky-wrapper {
+
+    max-width: 1400px;
+
+    margin:
+      10px auto 35px;
+
+    padding-top: 55px;
+
+    justify-content: flex-start;
+
+    position: relative;
+  }
+
+
+  /* =========================================
+     CARD
+  ========================================= */
+
+  .sticky-card {
+
+    width: 320px;
+
+    min-height: 205px;
+
+    padding:
+      28px 25px 24px;
+
+    position:relative;
+  }
+
+
+  /* =========================================
+     HANGER
+     
+     IMPORTANT:
+     Center hanger over the 320px card,
+     NOT over the entire 1400px wrapper.
+  ========================================= */
+
+  .sticky-hanger {
+
+    width: 320px;
+
+    left: 160px;
+
+    transform:
+      translateX(-50%);
+  }
+
+
+  /* =========================================
+     STRINGS
+  ========================================= */
+
+  .left-string {
+
+    left: 80px;
+
+  }
+
+  .right-string {
+
+    right: 80px;
+
+  }
+
+
+  /* =========================================
+     CARD TEXT
+  ========================================= */
+
+  .sticky-card h3 {
+
+    font-size: 23px;
+
+  }
+
+
+  .sticky-preview span {
+
+    font-size: 14px;
+
+  }
+
 }

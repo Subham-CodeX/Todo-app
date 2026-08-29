@@ -437,21 +437,6 @@ const weeklyData = {
           </div>
         </div>
 
-        <div className="dashboard-card">
-          <h3 className="dashboard-title">
-            Performance
-          </h3>
-
-          <div className="score-circle">
-            <div className="score-value">
-              {stats.productivity}%
-
-              <span>
-                Keep Going 🚀
-              </span>
-            </div>
-          </div>
-        </div>
       </section>
       
     </div>

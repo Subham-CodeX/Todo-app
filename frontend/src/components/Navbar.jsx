@@ -6,13 +6,37 @@ import {
   FaFileAlt,
   FaUser,
   FaPlus,
+  FaStickyNote,
 } from "react-icons/fa";
 
 function Navbar({ onAddTask }) {
+
   return (
     <nav className="bottom-nav">
 
-      {/* Home */}
+      {/* BRAND */}
+
+      <div className="desktop-nav-brand">
+
+        <div className="brand-icon">
+          ✓
+        </div>
+
+        <div>
+          <strong>
+            TaskFlow
+          </strong>
+
+          <span>
+            Stay organized
+          </span>
+        </div>
+
+      </div>
+
+
+      {/* HOME */}
+
       <NavLink
         to="/"
         className={({ isActive }) =>
@@ -22,9 +46,15 @@ function Navbar({ onAddTask }) {
         }
       >
         <FaHome />
+
+        <span className="nav-label">
+          Home
+        </span>
       </NavLink>
 
-      {/* Analytics */}
+
+      {/* ANALYTICS */}
+
       <NavLink
         to="/analytics"
         className={({ isActive }) =>
@@ -34,18 +64,15 @@ function Navbar({ onAddTask }) {
         }
       >
         <FaChartPie />
+
+        <span className="nav-label">
+          Analytics
+        </span>
       </NavLink>
 
-      {/* Add Task Button */}
-      <button
-        className="floating-add"
-        onClick={onAddTask}
-        aria-label="Add Task"
-      >
-        <FaPlus />
-      </button>
 
-      {/* Templates */}
+      {/* TEMPLATES */}
+
       <NavLink
         to="/templates"
         className={({ isActive }) =>
@@ -55,9 +82,33 @@ function Navbar({ onAddTask }) {
         }
       >
         <FaFileAlt />
+
+        <span className="nav-label">
+          Templates
+        </span>
       </NavLink>
 
-      {/* Profile */}
+
+      {/* NOTES */}
+
+      <NavLink
+        to="/notes"
+        className={({ isActive }) =>
+          isActive
+            ? "nav-item active"
+            : "nav-item"
+        }
+      >
+        <FaStickyNote />
+
+        <span className="nav-label">
+          Notes
+        </span>
+      </NavLink>
+
+
+      {/* PROFILE */}
+
       <NavLink
         to="/profile"
         className={({ isActive }) =>
@@ -67,7 +118,28 @@ function Navbar({ onAddTask }) {
         }
       >
         <FaUser />
+
+        <span className="nav-label">
+          Profile
+        </span>
       </NavLink>
+
+
+      {/* ADD TASK */}
+
+      <button
+        className="floating-add"
+        onClick={onAddTask}
+        aria-label="Add Task"
+      >
+
+        <FaPlus />
+
+        <span className="desktop-add-label">
+          Add Task
+        </span>
+
+      </button>
 
     </nav>
   );

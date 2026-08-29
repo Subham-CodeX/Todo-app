@@ -80,11 +80,25 @@ export default function Profile() {
         ========================= */}
 
         <div className="profile-title">
+
+          {/* BACK TO HOME */}
+          <button
+            type="button"
+            className="profile-back-button"
+            onClick={() =>
+              navigate("/")
+            }
+            aria-label="Back to home"
+          >
+            ←
+          </button>
+
           <h1>Profile</h1>
 
           <p>
             Your TaskFlow account
           </p>
+
         </div>
 
         {/* =========================

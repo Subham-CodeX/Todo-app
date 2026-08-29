@@ -243,3 +243,257 @@
     column-gap: 10px;
   }
 }
+
+/* =========================================================
+   TASKFLOW NOTES — DESKTOP
+========================================================= */
+
+@media (min-width: 768px) {
+
+  /* =======================================================
+     PAGE
+  ======================================================= */
+
+  .notes-page {
+
+    width:
+      calc(100% - 250px);
+
+    max-width: none;
+
+    min-height: 100vh;
+
+    margin:
+      0 0 0 250px;
+
+    padding:
+      42px 50px 120px;
+
+    box-sizing: border-box;
+
+    position: relative;
+
+    background:
+      radial-gradient(
+        circle at 10% 5%,
+        rgba(123, 47, 247, 0.20),
+        transparent 28%
+      ),
+      linear-gradient(
+        180deg,
+        #25145b 0%,
+        #32177e 35%,
+        #f7f5ff 100%
+      );
+  }
+
+
+  /* =======================================================
+     HEADER
+  ======================================================= */
+
+  .notes-header {
+
+    width: 100%;
+
+    max-width: 1400px;
+
+    margin:
+      0 auto 28px;
+
+    gap: 20px;
+  }
+
+
+  .notes-header h1 {
+
+    font-size: 42px;
+
+    font-weight: 800;
+
+    letter-spacing:
+      -0.5px;
+  }
+
+
+  .notes-header p {
+
+    margin-top: 6px;
+
+    font-size: 14px;
+
+    opacity: 0.75;
+  }
+
+
+  /* =======================================================
+     BACK BUTTON
+  ======================================================= */
+
+  .back-btn {
+
+    width: 48px;
+
+    height: 48px;
+
+    border-radius: 15px;
+
+    background:
+      rgba(255,255,255,.12);
+
+    border:
+      1px solid
+      rgba(255,255,255,.15);
+
+    backdrop-filter:
+      blur(15px);
+  }
+
+
+  /* =======================================================
+     SEARCH
+  ======================================================= */
+
+  .notes-search {
+
+    width: 100%;
+
+    max-width: 1400px;
+
+    margin:
+      0 auto 30px;
+
+    min-height: 58px;
+
+    padding:
+      0 20px;
+
+    border-radius: 18px;
+
+    box-sizing: border-box;
+
+    box-shadow:
+      0 12px 30px
+      rgba(0,0,0,.10);
+
+    background:
+      rgba(255,255,255,.96);
+  }
+
+
+  .notes-search input {
+
+    font-size: 15px;
+  }
+
+
+  /* =======================================================
+     NOTES GRID
+  ======================================================= */
+
+  .notes-grid {
+
+    width: 100%;
+
+    max-width: 1400px;
+
+    margin: 0 auto;
+
+    padding-bottom: 100px;
+
+    /*
+      Disable the mobile masonry
+      column layout.
+    */
+
+    column-count: unset;
+
+    column-gap: unset;
+
+    display: grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 20px;
+
+    align-items: start;
+  }
+
+
+  /* =======================================================
+     EMPTY / LOADING
+  ======================================================= */
+
+  .notes-loading {
+
+    width: 100%;
+
+    max-width: 1400px;
+
+    margin: 0 auto;
+
+    padding:
+      80px 20px;
+
+    color: white;
+  }
+
+
+  .empty-notes {
+
+    width: 100%;
+
+    max-width: 1400px;
+
+    margin: 0 auto;
+
+    padding:
+      100px 20px;
+
+    color: white;
+  }
+
+
+  /* =======================================================
+     FAB
+  ======================================================= */
+
+  .notes-fab {
+
+    position: fixed;
+
+    right: 45px;
+
+    bottom: 35px;
+
+    width: 62px;
+
+    height: 62px;
+
+    border-radius: 18px;
+
+    z-index: 100;
+
+    box-shadow:
+      0 15px 35px
+      rgba(123,47,247,.40);
+  }
+
+}
+
+/* =========================================================
+   LARGE DESKTOP
+========================================================= */
+
+@media (min-width: 1200px) {
+
+  .notes-grid {
+
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 22px;
+  }
+
+}

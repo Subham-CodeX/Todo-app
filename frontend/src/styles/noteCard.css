@@ -182,3 +182,67 @@
 
   color: #7b2ff7;
 }
+
+/* =========================================================
+   NOTE CARD — DESKTOP
+========================================================= */
+
+@media (min-width: 768px) {
+
+  .note-card {
+
+    width: 100%;
+
+    min-width: 0;
+
+    min-height: 220px;
+
+    margin-bottom: 0;
+
+    padding: 24px;
+
+    border-radius: 22px;
+
+    box-shadow:
+      0 10px 25px
+      rgba(0,0,0,.08);
+
+    transition:
+      box-shadow .25s ease,
+      transform .25s ease;
+  }
+
+
+  .note-card h3 {
+
+    margin:
+      0 40px 12px 0;
+
+    font-size: 20px;
+  }
+
+
+  .note-card p {
+
+    font-size: 15px;
+
+    line-height: 1.65;
+  }
+
+
+  .note-card-footer {
+
+    margin-top: 24px;
+  }
+
+
+  .note-card-actions button {
+
+    width: 34px;
+
+    height: 34px;
+
+    border-radius: 9px;
+  }
+
+}

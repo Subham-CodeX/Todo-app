@@ -631,3 +631,226 @@
   }
 
 }
+
+/* =========================================================
+   DESKTOP NOTE MODAL
+   ========================================================= */
+
+@media (min-width: 768px) {
+
+  .note-modal {
+
+    /*
+      TaskFlow sidebar is 250px wide.
+
+      Center the modal inside the remaining
+      application/content area.
+    */
+
+    left: calc(
+      250px +
+      (100vw - 250px - 620px) / 2
+    );
+
+    right: auto;
+
+    width: 620px;
+
+    max-width: 620px;
+
+    /*
+      Keep the complete editor visible.
+    */
+
+    top: 6vh;
+
+    bottom: 6vh;
+
+    height: 88vh;
+
+    min-height: 0;
+
+    max-height: none;
+
+    margin: 0;
+
+    /*
+      Desktop spacing
+    */
+
+    padding:
+      18px
+      28px
+      28px;
+
+    border-radius: 28px;
+
+    /*
+      Make the modal itself scrollable
+      if the browser height is small.
+    */
+
+    overflow-x: hidden;
+
+    overflow-y: auto;
+
+    /*
+      Strong floating-card appearance.
+    */
+
+    box-shadow:
+      0 25px 70px
+      rgba(0, 0, 0, 0.35);
+
+  }
+
+
+  /* =========================================
+     HANDLE
+  ========================================= */
+
+  .note-modal-handle {
+
+    width: 65px;
+
+    height: 5px;
+
+    margin:
+      2px auto 22px;
+
+  }
+
+
+  /* =========================================
+     HEADER
+  ========================================= */
+
+  .note-modal-header {
+
+    grid-template-columns:
+      46px
+      minmax(0, 1fr)
+      46px;
+
+    gap: 12px;
+
+    margin-bottom: 22px;
+
+  }
+
+
+  .note-icon-btn {
+
+    width: 46px;
+
+    height: 46px;
+
+    min-width: 46px;
+
+  }
+
+
+  /* =========================================
+     TITLE
+  ========================================= */
+
+  .note-title-input {
+
+    font-size: 30px;
+
+    margin-bottom: 18px;
+
+  }
+
+
+  /* =========================================
+     CONTENT
+  ========================================= */
+
+  .note-content-input {
+
+    /*
+      Give the writing area enough room,
+      but don't allow it to push the
+      color/action sections outside.
+    */
+
+    min-height: 0;
+
+    height: 100%;
+
+    flex: 1 1 auto;
+
+    font-size: 17px;
+
+    line-height: 1.7;
+
+  }
+
+
+  /* =========================================
+     COLORS
+  ========================================= */
+
+  .note-color-section {
+
+    margin-top: 20px;
+
+  }
+
+
+  .note-color-section > span {
+
+    text-align: left;
+
+    font-size: 13px;
+
+    margin-bottom: 14px;
+
+  }
+
+
+  .note-colors {
+
+    justify-content: flex-start;
+
+    gap: 12px;
+
+  }
+
+
+  .note-color {
+
+    width: 36px;
+
+    height: 36px;
+
+    min-width: 36px;
+
+  }
+
+
+  /* =========================================
+     ACTIONS
+  ========================================= */
+
+  .note-modal-actions {
+
+    margin-top: 24px;
+
+    padding-top: 4px;
+
+  }
+
+
+  .note-save-btn,
+  .note-delete-btn {
+
+    min-height: 52px;
+
+    padding:
+      0 24px;
+
+  }
+
+}

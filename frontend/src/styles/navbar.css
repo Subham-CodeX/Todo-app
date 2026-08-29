@@ -1,109 +1,404 @@
-.bottom-nav{
+/* =========================================================
+   MOBILE NAVIGATION
+========================================================= */
 
-    position:fixed;
+.bottom-nav {
 
-    bottom:0;
+  position: fixed;
 
-    left:50%;
+  left: 50%;
+  bottom: 0;
 
-    transform:translateX(-50%);
+  transform:
+    translateX(-50%);
 
-    width:100%;
-    max-width:420px;
+  width: 100%;
+  max-width: 420px;
 
-    height:78px;
+  height: 78px;
 
-    display:flex;
-    justify-content:space-around;
-    align-items:center;
+  display: flex;
 
-    background:#ffffff;
+  justify-content:
+    space-around;
 
-    border-radius:30px 30px 0 0;
+  align-items: center;
 
-    box-shadow:
-      0 -8px 30px rgba(0,0,0,.12);
+  background: white;
 
-    z-index:9999;
-
-}
-
-.nav-item{
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  width:45px;
-  height:45px;
-
-  color:#6f42f5;
-
-  text-decoration:none;
-
-  font-size:18px;
-}
-
-.nav-item.active{
-  color:#4c1dff;
-}
-
-.floating-add{
-
-  position:absolute;
-
-  left:50%;
-  top:-28px;
-
-  transform:translateX(-50%);
-
-  width:64px;
-  height:64px;
-
-  border:none;
-  border-radius:50%;
-
-  background:#6f42f5;
-
-  color:white;
-
-  font-size:34px;
-
-  cursor:pointer;
+  border-radius:
+    30px
+    30px
+    0
+    0;
 
   box-shadow:
-  0 12px 35px rgba(111,66,245,.4);
+    0 -8px 30px
+    rgba(0,0,0,.12);
 
-  z-index:1001;
+  z-index: 9999;
 }
 
-.floating-add:hover{
+
+.nav-item {
+
+  width: 45px;
+  height: 45px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color: #6f42f5;
+
+  text-decoration: none;
+
+  font-size: 18px;
+}
+
+
+.nav-item.active {
+  color: #4c1dff;
+}
+
+
+.nav-label {
+  display: none;
+}
+
+
+.floating-add {
+
+  position: absolute;
+
+  left: 50%;
+  top: -28px;
+
   transform:
-  translateX(-50%)
-  scale(1.05);
+    translateX(-50%);
+
+  width: 64px;
+  height: 64px;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7b2ff7,
+      #9d4edd
+    );
+
+  color: white;
+
+  font-size: 34px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 12px 35px
+    rgba(111,66,245,.4);
+
+  z-index: 1001;
 }
-.bottom-nav::after{
 
-content:"";
 
-position:absolute;
+.floating-add:hover {
 
-left:0;
-right:0;
-bottom:-20px;
-
-height:20px;
-
-background:#10003a;
-
-}
-.nav-item svg{
-  width:24px;
-  height:24px;
-  display:block;
+  transform:
+    translateX(-50%)
+    scale(1.05);
 }
 
-.floating-add svg{
-  width:26px;
-  height:26px;
+
+.desktop-nav-brand,
+.desktop-add-label {
+  display: none;
+}
+
+
+.bottom-nav::after {
+
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  right: 0;
+  bottom: -20px;
+
+  height: 20px;
+
+  background:
+    #10003a;
+}
+
+
+.nav-item svg {
+
+  width: 24px;
+  height: 24px;
+}
+
+
+.floating-add svg {
+
+  width: 26px;
+  height: 26px;
+}
+
+
+/* =========================================================
+   DESKTOP SIDEBAR
+========================================================= */
+
+@media (min-width: 768px) {
+
+  .bottom-nav {
+
+    left: 0;
+    top: 0;
+    bottom: 0;
+
+    transform: none;
+
+    width: 250px;
+    max-width: none;
+
+    height: 100vh;
+
+    padding:
+      28px 18px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: flex-start;
+
+    align-items: stretch;
+
+    gap: 8px;
+
+    border-radius: 0;
+
+    background:
+      linear-gradient(
+        180deg,
+        #120c27 0%,
+        #0c071b 100%
+      );
+
+    box-shadow:
+      10px 0 40px
+      rgba(0,0,0,.25);
+  }
+
+
+  .bottom-nav::after {
+    display: none;
+  }
+
+
+  /* -------------------------------------------------------
+     BRAND
+  ------------------------------------------------------- */
+
+  .desktop-nav-brand {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding:
+      5px
+      10px
+      32px;
+
+    color: white;
+  }
+
+
+  .brand-icon {
+
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 12px;
+
+    background:
+      linear-gradient(
+        135deg,
+        #7b2ff7,
+        #9d4edd
+      );
+
+    font-size: 20px;
+
+    font-weight: 800;
+
+    box-shadow:
+      0 10px 25px
+      rgba(123,47,247,.3);
+  }
+
+
+  .desktop-nav-brand strong {
+
+    display: block;
+
+    font-size: 20px;
+
+    letter-spacing:
+      -.3px;
+  }
+
+
+  .desktop-nav-brand span {
+
+    display: block;
+
+    margin-top: 2px;
+
+    font-size: 11px;
+
+    color:
+      #9188aa;
+  }
+
+
+  /* -------------------------------------------------------
+     NAV ITEMS
+  ------------------------------------------------------- */
+
+  .nav-item {
+
+    width: 100%;
+    height: 52px;
+
+    padding:
+      0 16px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content:
+      flex-start;
+
+    gap: 14px;
+
+    border-radius: 14px;
+
+    color:
+      #9f97b5;
+
+    font-size: 14px;
+
+    transition:
+      .25s ease;
+  }
+
+
+  .nav-item svg {
+
+    width: 20px;
+    height: 20px;
+
+    flex-shrink: 0;
+  }
+
+
+  .nav-item:hover {
+
+    color: white;
+
+    background:
+      rgba(123,47,247,.12);
+
+    transform:
+      translateX(3px);
+  }
+
+
+  .nav-item.active {
+
+    color: white;
+
+    background:
+      linear-gradient(
+        135deg,
+        #7b2ff7,
+        #8e42f6
+      );
+
+    box-shadow:
+      0 10px 30px
+      rgba(123,47,247,.3);
+  }
+
+
+  .nav-label {
+    display: inline;
+  }
+
+
+  /* -------------------------------------------------------
+     ADD TASK
+  ------------------------------------------------------- */
+
+  .floating-add {
+
+    position: relative;
+
+    left: auto;
+    top: auto;
+
+    transform: none;
+
+    width: 100%;
+    height: 52px;
+
+    margin-top: 20px;
+
+    border-radius: 14px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    font-size: 15px;
+  }
+
+
+  .floating-add:hover {
+
+    transform:
+      translateY(-2px);
+  }
+
+
+  .desktop-add-label {
+
+    display: inline;
+
+    font-size: 14px;
+
+    font-weight: 700;
+  }
+
 }
