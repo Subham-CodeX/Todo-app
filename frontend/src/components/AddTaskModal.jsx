@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useTasks } from "../context/TaskContext";
 import { useTemplates } from "../context/TemplateContext";
@@ -13,26 +13,18 @@ const AddTaskModal = ({
   const { addTemplate } =
     useTemplates();
 
+  const formRef = useRef(null);
+
   const initialForm = {
-
     title: "",
-
     description: "",
-
     category: "Work",
-
     priority: "High",
-
     date: "",
-
     startTime: "",
-
     endTime: "",
-
     completed: false,
-
     isTemplate: false,
-
   };
 
   const [formData, setFormData] =
@@ -45,31 +37,40 @@ const AddTaskModal = ({
   const handleChange = (e) => {
 
     const {
-
       name,
-
       value,
-
       type,
-
       checked,
-
     } = e.target;
 
     setFormData((prev) => ({
-
       ...prev,
 
       [name]:
-
         type === "checkbox"
-
           ? checked
-
           : value,
-
     }));
+  };
 
+  // ==========================
+  // KEEP FOCUSED INPUT VISIBLE
+  // ON MOBILE KEYBOARD
+  // ==========================
+
+  const handleFocus = (e) => {
+
+    const element = e.target;
+
+    setTimeout(() => {
+
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+
+    }, 250);
   };
 
   // ==========================
@@ -82,13 +83,10 @@ const AddTaskModal = ({
 
     try {
 
-      // ----------------------
-      // Create Task
-      // ----------------------
-
       await addTask({
 
-        title: formData.title,
+        title:
+          formData.title,
 
         description:
           formData.description,
@@ -110,15 +108,12 @@ const AddTaskModal = ({
 
       });
 
-      // ----------------------
-      // Create Template
-      // ----------------------
-
       if (formData.isTemplate) {
 
         await addTemplate({
 
-          title: formData.title,
+          title:
+            formData.title,
 
           description:
             formData.description,
@@ -149,11 +144,8 @@ const AddTaskModal = ({
     } catch (error) {
 
       console.error(
-
         "Create Task Error:",
-
         error
-
       );
 
     }
@@ -172,28 +164,87 @@ const AddTaskModal = ({
 
   };
 
+  // ==========================
+  // ESCAPE KEY
+  // ==========================
+
+  useEffect(() => {
+
+    if (!isOpen) return;
+
+    const handleEscape = (e) => {
+
+      if (e.key === "Escape") {
+        handleClose();
+      }
+
+    };
+
+    document.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+    return () => {
+
+      document.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+
+    };
+
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <>
+      {/* ==========================
+          OVERLAY
+      ========================== */}
+
       <div
         id="overlay"
         className="active"
         onClick={handleClose}
-      ></div>
+      />
+
+      {/* ==========================
+          TASK MODAL
+      ========================== */}
 
       <div
         id="taskModal"
         className="active"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) =>
+          e.stopPropagation()
+        }
       >
+
+        {/* Drag indicator */}
+
         <div className="drag-line"></div>
 
-        <h2>Add New Task</h2>
+        {/* Header */}
+
+        <h2>
+          Add New Task
+        </h2>
+
+        {/* ==========================
+            SCROLLABLE FORM
+        ========================== */}
 
         <form
           id="taskForm"
+          ref={formRef}
           onSubmit={handleSubmit}
         >
+
+          {/* TASK NAME */}
 
           <input
             type="text"
@@ -201,21 +252,30 @@ const AddTaskModal = ({
             placeholder="Task Name"
             value={formData.title}
             onChange={handleChange}
+            onFocus={handleFocus}
+            autoComplete="off"
             required
           />
+
+          {/* DESCRIPTION */}
 
           <textarea
             name="description"
             placeholder="Description"
             value={formData.description}
             onChange={handleChange}
+            onFocus={handleFocus}
           />
+
+          {/* CATEGORY */}
 
           <select
             name="category"
             value={formData.category}
             onChange={handleChange}
+            onFocus={handleFocus}
           >
+
             <option value="Work">
               Work
             </option>
@@ -231,13 +291,18 @@ const AddTaskModal = ({
             <option value="Personal">
               Personal
             </option>
+
           </select>
+
+          {/* PRIORITY */}
 
           <select
             name="priority"
             value={formData.priority}
             onChange={handleChange}
+            onFocus={handleFocus}
           >
+
             <option value="High">
               High Priority
             </option>
@@ -249,14 +314,20 @@ const AddTaskModal = ({
             <option value="Low">
               Low Priority
             </option>
+
           </select>
+
+          {/* DATE */}
 
           <input
             type="date"
             name="date"
             value={formData.date}
             onChange={handleChange}
+            onFocus={handleFocus}
           />
+
+          {/* TIME */}
 
           <div className="time-row">
 
@@ -265,6 +336,7 @@ const AddTaskModal = ({
               name="startTime"
               value={formData.startTime}
               onChange={handleChange}
+              onFocus={handleFocus}
             />
 
             <input
@@ -272,24 +344,35 @@ const AddTaskModal = ({
               name="endTime"
               value={formData.endTime}
               onChange={handleChange}
+              onFocus={handleFocus}
             />
 
           </div>
+
+          {/* TEMPLATE */}
 
           <label className="template-option">
 
             <input
               type="checkbox"
               name="isTemplate"
-              checked={formData.isTemplate}
+              checked={
+                formData.isTemplate
+              }
               onChange={handleChange}
             />
 
-            Save as Template
+            <span>
+              Save as Template
+            </span>
 
           </label>
 
-          <button type="submit">
+          {/* SUBMIT */}
+
+          <button
+            type="submit"
+          >
             Create Task
           </button>
 
@@ -298,7 +381,6 @@ const AddTaskModal = ({
       </div>
     </>
   );
-
 };
 
 export default AddTaskModal;
