@@ -7,6 +7,7 @@ import {
   FaUser,
   FaPlus,
   FaStickyNote,
+  FaComments,
 } from "react-icons/fa";
 
 function Navbar({ onAddTask }) {
@@ -14,7 +15,9 @@ function Navbar({ onAddTask }) {
   return (
     <nav className="bottom-nav">
 
-      {/* BRAND */}
+      {/* =====================
+          DESKTOP BRAND
+      ===================== */}
 
       <div className="desktop-nav-brand">
 
@@ -35,7 +38,9 @@ function Navbar({ onAddTask }) {
       </div>
 
 
-      {/* HOME */}
+      {/* =====================
+          HOME
+      ===================== */}
 
       <NavLink
         to="/"
@@ -53,14 +58,17 @@ function Navbar({ onAddTask }) {
       </NavLink>
 
 
-      {/* ANALYTICS */}
+      {/* =====================
+          ANALYTICS
+          DESKTOP ONLY
+      ===================== */}
 
       <NavLink
         to="/analytics"
         className={({ isActive }) =>
           isActive
-            ? "nav-item active"
-            : "nav-item"
+            ? "nav-item desktop-only-nav active"
+            : "nav-item desktop-only-nav"
         }
       >
         <FaChartPie />
@@ -71,14 +79,17 @@ function Navbar({ onAddTask }) {
       </NavLink>
 
 
-      {/* TEMPLATES */}
+      {/* =====================
+          TEMPLATES
+          DESKTOP ONLY
+      ===================== */}
 
       <NavLink
         to="/templates"
         className={({ isActive }) =>
           isActive
-            ? "nav-item active"
-            : "nav-item"
+            ? "nav-item desktop-only-nav active"
+            : "nav-item desktop-only-nav"
         }
       >
         <FaFileAlt />
@@ -89,7 +100,30 @@ function Navbar({ onAddTask }) {
       </NavLink>
 
 
-      {/* NOTES */}
+      {/* =====================
+          CHAT
+          MOBILE ONLY
+      ===================== */}
+
+      <NavLink
+        to="/chat"
+        className={({ isActive }) =>
+          isActive
+            ? "nav-item mobile-only-nav active"
+            : "nav-item mobile-only-nav"
+        }
+      >
+        <FaComments />
+
+        <span className="nav-label">
+          Chat
+        </span>
+      </NavLink>
+
+
+      {/* =====================
+          NOTES
+      ===================== */}
 
       <NavLink
         to="/notes"
@@ -107,7 +141,9 @@ function Navbar({ onAddTask }) {
       </NavLink>
 
 
-      {/* PROFILE */}
+      {/* =====================
+          PROFILE
+      ===================== */}
 
       <NavLink
         to="/profile"
@@ -125,7 +161,9 @@ function Navbar({ onAddTask }) {
       </NavLink>
 
 
-      {/* ADD TASK */}
+      {/* =====================
+          ADD TASK
+      ===================== */}
 
       <button
         className="floating-add"

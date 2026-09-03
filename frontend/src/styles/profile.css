@@ -489,3 +489,411 @@
   color: white;
   background: #080b12;
 }
+
+/* =====================================
+   MOBILE PROFILE MENU BUTTON
+===================================== */
+
+.profile-menu-button {
+
+  position: absolute;
+
+  top: 0;
+
+  right: 0;
+
+  width: 42px;
+
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: 1px solid
+    rgba(255,255,255,.08);
+
+  border-radius: 12px;
+
+  background:
+    #171c29;
+
+  color:
+    #ffffff;
+
+  cursor: pointer;
+
+  font-size: 18px;
+
+  transition:
+    .25s ease;
+
+}
+
+
+.profile-menu-button:hover {
+
+  background:
+    #7b2ff7;
+
+  transform:
+    scale(1.05);
+
+}
+
+
+/* =====================================
+   MENU OVERLAY
+===================================== */
+
+.profile-menu-overlay {
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 10000;
+
+  display: flex;
+
+  align-items: flex-end;
+
+  background:
+    rgba(0,0,0,.6);
+
+  backdrop-filter:
+    blur(8px);
+
+  animation:
+    profileOverlayIn
+    .25s ease;
+
+}
+
+
+/* =====================================
+   MOBILE BOTTOM SHEET
+===================================== */
+
+.profile-mobile-menu {
+
+  width: 100%;
+
+  max-width: 430px;
+
+  margin:
+    0 auto;
+
+  padding:
+    24px
+    20px
+    calc(30px + env(safe-area-inset-bottom));
+
+  border-radius:
+    30px
+    30px
+    0
+    0;
+
+  background:
+    linear-gradient(
+      180deg,
+      #202637 0%,
+      #111622 100%
+    );
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  box-shadow:
+    0 -25px 70px
+    rgba(0,0,0,.5);
+
+  animation:
+    profileMenuUp
+    .3s
+    cubic-bezier(
+      .22,
+      1,
+      .36,
+      1
+    );
+
+}
+
+
+/* =====================================
+   MENU HEADER
+===================================== */
+
+.profile-menu-header {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  margin-bottom:
+    22px;
+
+}
+
+
+.profile-menu-header h3 {
+
+  margin: 0;
+
+  font-size: 21px;
+
+  color:
+    white;
+
+}
+
+
+.profile-menu-header p {
+
+  margin:
+    5px
+    0
+    0;
+
+  color:
+    #9ca4b8;
+
+  font-size:
+    13px;
+
+}
+
+
+.profile-menu-header button {
+
+  width: 42px;
+
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background:
+    rgba(255,255,255,.07);
+
+  color:
+    white;
+
+  cursor: pointer;
+
+  font-size:
+    18px;
+
+}
+
+
+/* =====================================
+   MENU ITEMS
+===================================== */
+
+.profile-menu-item {
+
+  width: 100%;
+
+  padding:
+    16px;
+
+  margin-bottom:
+    12px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap:
+    15px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius:
+    18px;
+
+  background:
+    rgba(255,255,255,.04);
+
+  color:
+    white;
+
+  text-align:
+    left;
+
+  cursor:
+    pointer;
+
+  transition:
+    .25s ease;
+
+}
+
+
+.profile-menu-item:hover {
+
+  transform:
+    translateY(-2px);
+
+  background:
+    rgba(123,47,247,.16);
+
+  border-color:
+    rgba(123,47,247,.35);
+
+}
+
+
+.profile-menu-icon {
+
+  width:
+    48px;
+
+  height:
+    48px;
+
+  flex-shrink:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border-radius:
+    14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7b2ff7,
+      #9d4edd
+    );
+
+  color:
+    white;
+
+  font-size:
+    20px;
+
+}
+
+
+.profile-menu-item strong {
+
+  display:
+    block;
+
+  font-size:
+    15px;
+
+  margin-bottom:
+    4px;
+
+}
+
+
+.profile-menu-item span {
+
+  display:
+    block;
+
+  color:
+    #9ca4b8;
+
+  font-size:
+    12px;
+
+}
+
+
+/* =====================================
+   ANIMATIONS
+===================================== */
+
+@keyframes profileOverlayIn {
+
+  from {
+
+    opacity:
+      0;
+
+  }
+
+  to {
+
+    opacity:
+      1;
+
+  }
+
+}
+
+
+@keyframes profileMenuUp {
+
+  from {
+
+    opacity:
+      0;
+
+    transform:
+      translateY(
+        100%
+      );
+
+  }
+
+  to {
+
+    opacity:
+      1;
+
+    transform:
+      translateY(
+        0
+      );
+
+  }
+
+}
+
+
+/* =====================================
+   DESKTOP PROFILE
+   KEEP MENU HIDDEN
+===================================== */
+
+@media (min-width: 768px) {
+
+  .profile-menu-button,
+  .profile-menu-overlay {
+
+    display:
+      none;
+
+  }
+
+}

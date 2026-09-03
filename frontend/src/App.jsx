@@ -12,6 +12,7 @@ import {
 import Layout from "./components/Layout";
 
 import Tasks from "./pages/Tasks";
+import Chat from "./pages/Chat";
 import Analytics from "./pages/Analytics";
 import Templates from "./pages/Templates";
 import Notes from "./pages/Notes";
@@ -134,6 +135,13 @@ function App() {
               <Route
                 path="/"
                 element={<Tasks />}
+              />
+
+              <Route
+                path="/chat"
+                element={
+                  <Chat />
+                }
               />
 
               <Route

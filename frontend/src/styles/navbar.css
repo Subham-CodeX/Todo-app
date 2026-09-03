@@ -150,12 +150,31 @@
   height: 26px;
 }
 
+/* =========================================
+   MOBILE / DESKTOP NAV VISIBILITY
+========================================= */
+
+.desktop-only-nav {
+  display: none;
+}
+
+.mobile-only-nav {
+  display: flex;
+}
 
 /* =========================================================
    DESKTOP SIDEBAR
 ========================================================= */
 
 @media (min-width: 768px) {
+
+  .desktop-only-nav {
+    display: flex;
+  }
+
+  .mobile-only-nav {
+    display: none;
+  }
 
   .bottom-nav {
 

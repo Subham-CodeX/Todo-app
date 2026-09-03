@@ -6,11 +6,19 @@ import {
   FaEdit,
   FaLock,
   FaSignOutAlt,
+  FaBars,
+  FaTimes,
+  FaChartPie,
+  FaFileAlt,
 } from "react-icons/fa";
 
 import {
   useNavigate,
 } from "react-router-dom";
+
+import {
+  useState,
+} from "react";
 
 import {
   useAuth,
@@ -19,6 +27,12 @@ import {
 import "../styles/profile.css";
 
 export default function Profile() {
+
+  const [
+    isMenuOpen,
+    setIsMenuOpen,
+  ] = useState(false);
+
   const navigate =
     useNavigate();
 
@@ -91,6 +105,17 @@ export default function Profile() {
             aria-label="Back to home"
           >
             ←
+          </button>
+
+          <button
+            type="button"
+            className="profile-menu-button"
+            onClick={() =>
+              setIsMenuOpen(true)
+            }
+            aria-label="Open profile menu"
+          >
+            <FaBars />
           </button>
 
           <h1>Profile</h1>
@@ -267,6 +292,131 @@ export default function Profile() {
         </div>
 
       </div>
+
+      {/* =========================
+          MOBILE QUICK MENU
+      ========================= */}
+
+      {isMenuOpen && (
+
+        <div
+          className="profile-menu-overlay"
+          onClick={() =>
+            setIsMenuOpen(false)
+          }
+        >
+
+          <div
+            className="profile-mobile-menu"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+
+            <div className="profile-menu-header">
+
+              <div>
+
+                <h3>
+                  Quick Menu
+                </h3>
+
+                <p>
+                  Explore TaskFlow
+                </p>
+
+              </div>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  setIsMenuOpen(false)
+                }
+                aria-label="Close menu"
+              >
+                <FaTimes />
+              </button>
+
+            </div>
+
+
+            {/* ANALYTICS */}
+
+            <button
+              className="profile-menu-item"
+              onClick={() => {
+
+                setIsMenuOpen(false);
+
+                navigate(
+                  "/analytics"
+                );
+
+              }}
+            >
+
+              <div className="profile-menu-icon">
+
+                <FaChartPie />
+
+              </div>
+
+              <div>
+
+                <strong>
+                  Analytics
+                </strong>
+
+                <span>
+                  Track your productivity
+                </span>
+
+              </div>
+
+            </button>
+
+
+            {/* TEMPLATES */}
+
+            <button
+              className="profile-menu-item"
+              onClick={() => {
+
+                setIsMenuOpen(false);
+
+                navigate(
+                  "/templates"
+                );
+
+              }}
+            >
+
+              <div className="profile-menu-icon">
+
+                <FaFileAlt />
+
+              </div>
+
+              <div>
+
+                <strong>
+                  Templates
+                </strong>
+
+                <span>
+                  Manage your task templates
+                </span>
+
+              </div>
+
+            </button>
+
+          </div>
+
+        </div>
+
+      )}
 
     </div>
   );
