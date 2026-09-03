@@ -198,8 +198,9 @@
 }
 
 .profile-bio p {
+  white-space: pre-line;
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.3;
   color: #b7bdcc;
 }
 
