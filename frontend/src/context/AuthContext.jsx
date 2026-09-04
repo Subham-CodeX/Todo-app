@@ -14,16 +14,14 @@ import {
 
 
 const AuthContext =
-  createContext(null);
+  createContext(
+    null
+  );
 
 
 export function AuthProvider({
   children,
 }) {
-
-  // =====================================
-  // USER STATE
-  // =====================================
 
   const [
     user,
@@ -33,9 +31,6 @@ export function AuthProvider({
       null
     );
 
-  // =====================================
-  // LOADING STATE
-  // =====================================
 
   const [
     loading,
@@ -45,6 +40,7 @@ export function AuthProvider({
       true
     );
 
+
   // =====================================
   // LOAD USER AFTER APP START
   // =====================================
@@ -52,108 +48,103 @@ export function AuthProvider({
   useEffect(
     () => {
 
-      const token =
-        localStorage.getItem(
-          "taskflowToken"
-        );
+      const loadUser =
+        async () => {
 
-      // ---------------------------------
-      // NO TOKEN
-      // ---------------------------------
+          const token =
+            localStorage.getItem(
+              "taskflowToken"
+            );
 
-      if (
-        !token
-      ) {
 
-        setLoading(
-          false
-        );
+          // ===============================
+          // NO TOKEN
+          // ===============================
 
-        return;
+          if (
+            !token
+          ) {
 
-      }
+            setLoading(
+              false
+            );
 
-      // ---------------------------------
-      // CONNECT SOCKET
-      // ---------------------------------
+            return;
 
-      connectSocket(
-        token
-      );
+          }
 
-      // ---------------------------------
-      // LOAD CURRENT USER
-      // ---------------------------------
 
-      loadCurrentUser();
+          try {
 
-      // ---------------------------------
-      // CLEANUP
-      // ---------------------------------
+            // =============================
+            // VERIFY USER
+            // =============================
 
-      return () => {
+            const response =
+              await API.get(
+                "/auth/me"
+              );
 
-        disconnectSocket();
 
-      };
+            // =============================
+            // SAVE USER
+            // =============================
+
+            setUser(
+              response.data.user
+            );
+
+
+            // =============================
+            // CONNECT SOCKET ONCE
+            // =============================
+
+            connectSocket(
+              token
+            );
+
+
+          } catch (
+            error
+          ) {
+
+            console.error(
+              "Auth Error:",
+              error
+            );
+
+
+            localStorage.removeItem(
+              "taskflowToken"
+            );
+
+
+            disconnectSocket();
+
+
+            setUser(
+              null
+            );
+
+
+          } finally {
+
+            setLoading(
+              false
+            );
+
+          }
+
+        };
+
+
+      loadUser();
+
 
     },
     []
   );
 
-  // =====================================
-  // LOAD CURRENT USER
-  // =====================================
-
-  const loadCurrentUser =
-    async () => {
-
-      try {
-
-        const response =
-          await API.get(
-            "/auth/me"
-          );
-
-
-        setUser(
-          response.data.user
-        );
-
-
-      } catch (
-        error
-      ) {
-
-        console.error(
-          "Auth Error:",
-          error
-        );
-
-        // Invalid token
-
-        localStorage.removeItem(
-          "taskflowToken"
-        );
-
-
-        disconnectSocket();
-
-
-        setUser(
-          null
-        );
-
-
-      } finally {
-
-        setLoading(
-          false
-        );
-
-      }
-
-    };
 
   // =====================================
   // LOGIN
@@ -174,9 +165,6 @@ export function AuthProvider({
           }
         );
 
-      // ---------------------------------
-      // SAVE TOKEN
-      // ---------------------------------
 
       const token =
         response.data.token;
@@ -187,17 +175,13 @@ export function AuthProvider({
         token
       );
 
-      // ---------------------------------
-      // SAVE USER
-      // ---------------------------------
 
       setUser(
         response.data.user
       );
 
-      // ---------------------------------
+
       // CONNECT SOCKET
-      // ---------------------------------
 
       connectSocket(
         token
@@ -207,6 +191,7 @@ export function AuthProvider({
       return response.data;
 
     };
+
 
   // =====================================
   // REGISTER
@@ -233,6 +218,7 @@ export function AuthProvider({
       return response.data;
 
     };
+
 
   // =====================================
   // REFRESH USER
@@ -272,6 +258,7 @@ export function AuthProvider({
 
     };
 
+
   // =====================================
   // LOGOUT
   // =====================================
@@ -279,23 +266,13 @@ export function AuthProvider({
   const logout =
     () => {
 
-      // ---------------------------------
-      // DISCONNECT SOCKET
-      // ---------------------------------
-
       disconnectSocket();
 
-      // ---------------------------------
-      // REMOVE TOKEN
-      // ---------------------------------
 
       localStorage.removeItem(
         "taskflowToken"
       );
 
-      // ---------------------------------
-      // REMOVE USER
-      // ---------------------------------
 
       setUser(
         null
@@ -303,8 +280,9 @@ export function AuthProvider({
 
     };
 
+
   // =====================================
-  // CONTEXT PROVIDER
+  // CONTEXT
   // =====================================
 
   return (
@@ -339,8 +317,9 @@ export function AuthProvider({
 
 }
 
+
 // =====================================
-// USE AUTH HOOK
+// USE AUTH
 // =====================================
 
 export function useAuth() {

@@ -1,12 +1,18 @@
 require("dotenv").config();
 
-const http = require("http");
+const http =
+  require("http");
 
-const express = require("express");
+const express =
+  require("express");
 
-const cors = require("cors");
+const cors =
+  require("cors");
 
-const { Server } = require("socket.io");
+const {
+  Server,
+} =
+  require("socket.io");
 
 const connectDB =
   require("./config/db");
@@ -23,6 +29,8 @@ const authRoutes =
 const userRoutes =
   require("./routes/userRoutes");
 
+const connectionRoutes =
+  require("./routes/connectionRoutes");
 
 // ==========================================
 // CONNECT DATABASE
@@ -30,14 +38,12 @@ const userRoutes =
 
 connectDB();
 
-
 // ==========================================
 // EXPRESS APP
 // ==========================================
 
 const app =
   express();
-
 
 // ==========================================
 // HTTP SERVER
@@ -48,112 +54,128 @@ const server =
     app
   );
 
-
 // ==========================================
 // ALLOWED ORIGINS
 // ==========================================
 
-const allowedOrigins = [
+const allowedOrigins =
+  [
 
-  "http://localhost:5173",
+    "http://localhost:5173",
 
-  "http://127.0.0.1:5173",
+    "http://127.0.0.1:5173",
 
-  "https://todo-app-xi-five-57.vercel.app",
+    "https://todo-app-xi-five-57.vercel.app",
 
-  process.env.CLIENT_URL,
+    process.env.CLIENT_URL,
 
-]
-  .filter(Boolean)
-  .map(
-    (origin) =>
-      origin.replace(
-        /\/$/,
-        ""
-      )
-  );
+  ]
+    .filter(Boolean)
+    .map(
+      (origin) =>
+        origin.replace(
+          /\/$/,
+          ""
+        )
+    );
 
 
 // ==========================================
 // CORS OPTIONS
 // ==========================================
 
-const corsOptions = {
+const corsOptions =
+  {
 
-  origin:
-    (
-      origin,
-      callback
-    ) => {
+    origin:
+      (
+        origin,
+        callback
+      ) => {
 
-      // Allow requests without Origin
-      // such as Postman or server-to-server
+        // Allow Postman
+        // and server-to-server requests
 
-      if (
-        !origin
-      ) {
+        if (
+          !origin
+        ) {
+
+          return callback(
+            null,
+            true
+          );
+
+        }
+
+
+        const normalizedOrigin =
+          origin.replace(
+            /\/$/,
+            ""
+          );
+
+
+        if (
+          allowedOrigins.includes(
+            normalizedOrigin
+          )
+        ) {
+
+          return callback(
+            null,
+            true
+          );
+
+        }
+
+
+        console.error(
+          "CORS blocked origin:",
+          origin
+        );
+
 
         return callback(
-          null,
-          true
+          new Error(
+            "Not allowed by CORS"
+          )
         );
 
-      }
+      },
 
 
-      const normalizedOrigin =
-        origin.replace(
-          /\/$/,
-          ""
-        );
+    credentials:
+      true,
 
 
-      if (
-        allowedOrigins.includes(
-          normalizedOrigin
-        )
-      ) {
+    methods:
+      [
 
-        return callback(
-          null,
-          true
-        );
+        "GET",
 
-      }
+        "POST",
 
+        "PUT",
 
-      console.error(
-        "CORS blocked origin:",
-        origin
-      );
+        "PATCH",
+
+        "DELETE",
+
+        "OPTIONS",
+
+      ],
 
 
-      return callback(
-        new Error(
-          "Not allowed by CORS"
-        )
-      );
+    allowedHeaders:
+      [
 
-    },
+        "Content-Type",
 
-  credentials:
-    true,
+        "Authorization",
 
-  methods: [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-  ],
+      ],
 
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-  ],
-
-};
+  };
 
 
 // ==========================================
@@ -166,13 +188,15 @@ app.use(
   )
 );
 
-app.use(
-  express.json({
-    limit:
-      "10mb",
-  })
-);
 
+app.use(
+  express.json(
+    {
+      limit:
+        "10mb",
+    }
+  )
+);
 
 // ==========================================
 // SOCKET.IO
@@ -183,24 +207,28 @@ const io =
     server,
     {
 
-      cors: {
+      cors:
+        {
 
-        origin:
-          corsOptions.origin,
+          origin:
+            corsOptions.origin,
 
-        credentials:
-          true,
+          credentials:
+            true,
 
-        methods: [
-          "GET",
-          "POST",
-        ],
+          methods:
+            [
 
-      },
+              "GET",
+
+              "POST",
+
+            ],
+
+        },
 
     }
   );
-
 
 // ==========================================
 // INITIALIZE SOCKET
@@ -209,7 +237,6 @@ const io =
 initializeSocket(
   io
 );
-
 
 // ==========================================
 // TEST ROUTE
@@ -222,19 +249,21 @@ app.get(
     res
   ) => {
 
-    res.status(200).json({
+    res.status(200).json(
+      {
 
-      success:
-        true,
+        success:
+          true,
 
-      message:
-        "TaskFlow Backend is Running 🚀",
+        message:
+          "TaskFlow Backend is Running 🚀",
 
-      environment:
-        process.env.NODE_ENV ||
-        "development",
+        environment:
+          process.env.NODE_ENV ||
+          "development",
 
-    });
+      }
+    );
 
   }
 );
@@ -254,12 +283,14 @@ app.use(
   userRoutes
 );
 
+
 app.use(
   "/api/tasks",
   require(
     "./routes/taskRoutes"
   )
 );
+
 
 app.use(
   "/api/templates",
@@ -268,14 +299,49 @@ app.use(
   )
 );
 
+
 app.use(
   "/api/notes",
   noteRoutes
 );
 
+// ==========================================
+// CONNECTION ROUTES
+// ==========================================
+
+app.use(
+  "/api/connections",
+  connectionRoutes
+);
 
 // ==========================================
-// CORS ERROR HANDLER
+// 404 API HANDLER
+// ==========================================
+
+app.use(
+  (
+    req,
+    res
+  ) => {
+
+    res.status(404).json(
+      {
+
+        success:
+          false,
+
+        message:
+          `Route not found: ${req.method} ${req.originalUrl}`,
+
+      }
+    );
+
+  }
+);
+
+
+// ==========================================
+// ERROR HANDLER
 // ==========================================
 
 app.use(
@@ -286,6 +352,12 @@ app.use(
     next
   ) => {
 
+    console.error(
+      "Server Error:",
+      error
+    );
+
+
     if (
       error.message ===
       "Not allowed by CORS"
@@ -293,22 +365,38 @@ app.use(
 
       return res
         .status(403)
-        .json({
+        .json(
+          {
+
+            success:
+              false,
+
+            message:
+              "CORS request blocked",
+
+          }
+        );
+
+    }
+
+
+    res
+      .status(
+        error.status ||
+        500
+      )
+      .json(
+        {
 
           success:
             false,
 
           message:
-            "CORS request blocked",
+            error.message ||
+            "Internal server error",
 
-        });
-
-    }
-
-
-    next(
-      error
-    );
+        }
+      );
 
   }
 );

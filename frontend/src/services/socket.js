@@ -12,6 +12,7 @@ export const connectSocket =
     token
   ) => {
 
+
     // ======================================
     // ALREADY CONNECTED
     // ======================================
@@ -27,15 +28,21 @@ export const connectSocket =
 
 
     // ======================================
-    // SOCKET ALREADY CREATED
+    // SOCKET ALREADY EXISTS
     // ======================================
 
     if (
-      socket &&
-      !socket.connected
+      socket
     ) {
 
+      socket.auth =
+        {
+          token,
+        };
+
+
       socket.connect();
+
 
       return socket;
 
@@ -54,20 +61,22 @@ export const connectSocket =
           autoConnect:
             false,
 
-          transports: [
-            "websocket",
-            "polling",
-          ],
+          transports:
+            [
+              "websocket",
+              "polling",
+            ],
 
-          auth: {
-            token,
-          },
+          auth:
+            {
+              token,
+            },
 
           reconnection:
             true,
 
           reconnectionAttempts:
-            10,
+            Infinity,
 
           reconnectionDelay:
             1000,
@@ -80,7 +89,7 @@ export const connectSocket =
 
 
     // ======================================
-    // EVENTS
+    // CONNECTED
     // ======================================
 
     socket.on(
@@ -95,6 +104,10 @@ export const connectSocket =
       }
     );
 
+
+    // ======================================
+    // DISCONNECTED
+    // ======================================
 
     socket.on(
       "disconnect",
@@ -111,6 +124,10 @@ export const connectSocket =
     );
 
 
+    // ======================================
+    // CONNECTION ERROR
+    // ======================================
+
     socket.on(
       "connect_error",
       (
@@ -118,17 +135,13 @@ export const connectSocket =
       ) => {
 
         console.error(
-          "Socket connection error:",
+          "🔴 Socket connection error:",
           error.message
         );
 
       }
     );
 
-
-    // ======================================
-    // CONNECT
-    // ======================================
 
     socket.connect();
 
