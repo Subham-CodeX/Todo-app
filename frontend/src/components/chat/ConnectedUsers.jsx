@@ -17,7 +17,15 @@ import ConnectionUserCard from
   "./ConnectionUserCard";
 
 
-export default function ConnectedUsers() {
+export default function ConnectedUsers({
+
+  onOpenChat,
+
+}) {
+
+  // =====================================
+  // STATE
+  // =====================================
 
   const [
     users,
@@ -27,6 +35,7 @@ export default function ConnectedUsers() {
       []
     );
 
+
   const [
     loading,
     setLoading,
@@ -34,6 +43,7 @@ export default function ConnectedUsers() {
     useState(
       true
     );
+
 
   const [
     actionLoading,
@@ -43,6 +53,10 @@ export default function ConnectedUsers() {
       null
     );
 
+
+  // =====================================
+  // LOAD CONNECTED USERS
+  // =====================================
 
   useEffect(
     () => {
@@ -88,6 +102,10 @@ export default function ConnectedUsers() {
   );
 
 
+  // =====================================
+  // BLOCK USER
+  // =====================================
+
   const handleBlock =
     async (
       connectionUser
@@ -104,7 +122,9 @@ export default function ConnectedUsers() {
       if (
         !confirmed
       ) {
+
         return;
+
       }
 
 
@@ -115,11 +135,13 @@ export default function ConnectedUsers() {
         );
 
 
-        await
-          blockUser(
-            connectionUser._id
-          );
+        await blockUser(
+          connectionUser._id
+        );
 
+
+        // Remove blocked user
+        // from connected users list
 
         setUsers(
           (
@@ -159,6 +181,35 @@ export default function ConnectedUsers() {
     };
 
 
+  // =====================================
+  // OPEN CHAT
+  // =====================================
+
+  const handleOpenChat =
+    (
+      user
+    ) => {
+
+      if (
+        !onOpenChat
+      ) {
+
+        return;
+
+      }
+
+
+      onOpenChat(
+        user
+      );
+
+    };
+
+
+  // =====================================
+  // LOADING STATE
+  // =====================================
+
   if (
     loading
   ) {
@@ -180,6 +231,10 @@ export default function ConnectedUsers() {
   }
 
 
+  // =====================================
+  // MAIN UI
+  // =====================================
+
   return (
 
     <div
@@ -187,6 +242,10 @@ export default function ConnectedUsers() {
         chat-section
       "
     >
+
+      {/* ===============================
+          SECTION HEADER
+      =============================== */}
 
       <div
         className="
@@ -213,6 +272,10 @@ export default function ConnectedUsers() {
 
       </div>
 
+
+      {/* ===============================
+          EMPTY STATE
+      =============================== */}
 
       {
         users.length ===
@@ -259,22 +322,34 @@ export default function ConnectedUsers() {
 
                     >
 
+                      {/* ===================
+                          OPEN CHAT
+                      =================== */}
+
                       <button
 
                         className="
                           chat-user-btn
                         "
 
-                        disabled
+                        onClick={() =>
+                          handleOpenChat(
+                            item.user
+                          )
+                        }
 
                       >
 
                         <FaComments />
 
-                        Chat Soon
+                        Chat
 
                       </button>
 
+
+                      {/* ===================
+                          BLOCK USER
+                      =================== */}
 
                       <button
 

@@ -7,35 +7,99 @@ import {
 
 import API from "../services/api";
 
+import {
+  connectSocket,
+  disconnectSocket,
+} from "../services/socket";
+
+
 const AuthContext =
   createContext(null);
+
 
 export function AuthProvider({
   children,
 }) {
-  const [user, setUser] =
-    useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  // =====================================
+  // USER STATE
+  // =====================================
+
+  const [
+    user,
+    setUser,
+  ] =
+    useState(
+      null
+    );
+
+  // =====================================
+  // LOADING STATE
+  // =====================================
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(
+      true
+    );
 
   // =====================================
   // LOAD USER AFTER APP START
   // =====================================
 
-  useEffect(() => {
-    const token =
-      localStorage.getItem(
-        "taskflowToken"
+  useEffect(
+    () => {
+
+      const token =
+        localStorage.getItem(
+          "taskflowToken"
+        );
+
+      // ---------------------------------
+      // NO TOKEN
+      // ---------------------------------
+
+      if (
+        !token
+      ) {
+
+        setLoading(
+          false
+        );
+
+        return;
+
+      }
+
+      // ---------------------------------
+      // CONNECT SOCKET
+      // ---------------------------------
+
+      connectSocket(
+        token
       );
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+      // ---------------------------------
+      // LOAD CURRENT USER
+      // ---------------------------------
 
-    loadCurrentUser();
-  }, []);
+      loadCurrentUser();
+
+      // ---------------------------------
+      // CLEANUP
+      // ---------------------------------
+
+      return () => {
+
+        disconnectSocket();
+
+      };
+
+    },
+    []
+  );
 
   // =====================================
   // LOAD CURRENT USER
@@ -43,61 +107,106 @@ export function AuthProvider({
 
   const loadCurrentUser =
     async () => {
+
       try {
+
         const response =
           await API.get(
             "/auth/me"
           );
 
+
         setUser(
           response.data.user
         );
 
-      } catch (error) {
+
+      } catch (
+        error
+      ) {
+
         console.error(
           "Auth Error:",
           error
         );
 
+        // Invalid token
+
         localStorage.removeItem(
           "taskflowToken"
         );
 
-        setUser(null);
+
+        disconnectSocket();
+
+
+        setUser(
+          null
+        );
+
 
       } finally {
-        setLoading(false);
+
+        setLoading(
+          false
+        );
+
       }
+
     };
 
   // =====================================
   // LOGIN
   // =====================================
 
-  const login = async (
-    email,
-    password
-  ) => {
-    const response =
-      await API.post(
-        "/auth/login",
-        {
-          email,
-          password,
-        }
+  const login =
+    async (
+      email,
+      password
+    ) => {
+
+      const response =
+        await API.post(
+          "/auth/login",
+          {
+            email,
+            password,
+          }
+        );
+
+      // ---------------------------------
+      // SAVE TOKEN
+      // ---------------------------------
+
+      const token =
+        response.data.token;
+
+
+      localStorage.setItem(
+        "taskflowToken",
+        token
       );
 
-    localStorage.setItem(
-      "taskflowToken",
-      response.data.token
-    );
+      // ---------------------------------
+      // SAVE USER
+      // ---------------------------------
 
-    setUser(
-      response.data.user
-    );
+      setUser(
+        response.data.user
+      );
 
-    return response.data;
-  };
+      // ---------------------------------
+      // CONNECT SOCKET
+      // ---------------------------------
+
+      connectSocket(
+        token
+      );
+
+
+      return response.data;
+
+    };
 
   // =====================================
   // REGISTER
@@ -109,6 +218,7 @@ export function AuthProvider({
       email,
       password
     ) => {
+
       const response =
         await API.post(
           "/auth/register",
@@ -119,7 +229,9 @@ export function AuthProvider({
           }
         );
 
+
       return response.data;
+
     };
 
   // =====================================
@@ -128,58 +240,113 @@ export function AuthProvider({
 
   const refreshUser =
     async () => {
+
       try {
+
         const response =
           await API.get(
             "/auth/me"
           );
 
+
         setUser(
           response.data.user
         );
 
+
         return response.data.user;
 
-      } catch (error) {
+
+      } catch (
+        error
+      ) {
+
         console.error(
           "Refresh User Error:",
           error
         );
 
         return null;
+
       }
+
     };
 
   // =====================================
   // LOGOUT
   // =====================================
 
-  const logout = () => {
-    localStorage.removeItem(
-      "taskflowToken"
-    );
+  const logout =
+    () => {
 
-    setUser(null);
-  };
+      // ---------------------------------
+      // DISCONNECT SOCKET
+      // ---------------------------------
+
+      disconnectSocket();
+
+      // ---------------------------------
+      // REMOVE TOKEN
+      // ---------------------------------
+
+      localStorage.removeItem(
+        "taskflowToken"
+      );
+
+      // ---------------------------------
+      // REMOVE USER
+      // ---------------------------------
+
+      setUser(
+        null
+      );
+
+    };
+
+  // =====================================
+  // CONTEXT PROVIDER
+  // =====================================
 
   return (
+
     <AuthContext.Provider
+
       value={{
+
         user,
+
         loading,
+
         login,
+
         register,
+
         logout,
+
         refreshUser,
+
       }}
+
     >
-      {children}
+
+      {
+        children
+      }
+
     </AuthContext.Provider>
+
   );
+
 }
 
+// =====================================
+// USE AUTH HOOK
+// =====================================
+
 export function useAuth() {
+
   return useContext(
     AuthContext
   );
+
 }

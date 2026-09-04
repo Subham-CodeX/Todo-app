@@ -1,8 +1,29 @@
 require("dotenv").config();
 
-const express = require("express");
-const cors = require("cors");
-const connectDB = require("./config/db");
+const http =
+  require("http");
+
+const express =
+  require("express");
+
+const cors =
+  require("cors");
+
+const {
+  Server,
+} =
+  require("socket.io");
+
+const connectDB =
+  require("./config/db");
+
+const initializeSocket =
+  require("./socket/socketServer");
+
+// ==========================================
+// ROUTES
+// ==========================================
+
 const noteRoutes =
   require("./routes/noteRoutes");
 
@@ -13,75 +34,236 @@ const userRoutes =
   require("./routes/userRoutes");
 
 const connectionRoutes =
-  require(
-    "./routes/connectionRoutes"
-  );
+  require("./routes/connectionRoutes");
+
+const taskRoutes =
+  require("./routes/taskRoutes");
+
+const templateRoutes =
+  require("./routes/templateRoutes");
+
+// ==========================================
+// CONNECT DATABASE
+// ==========================================
 
 connectDB();
 
-const app = express();
+// ==========================================
+// CREATE EXPRESS APP
+// ==========================================
 
-// ==========================
-// Middleware
-// ==========================
-app.use(cors());
-app.use(express.json());
+const app =
+  express();
 
-// ==========================
-// Test Route
-// ==========================
+// ==========================================
+// CREATE HTTP SERVER
+// ==========================================
 
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message:
-      "Todo Backend is Running 🚀",
-  });
-});
+const server =
+  http.createServer(
+    app
+  );
 
-// ==========================
-// Routes
-// ==========================
+// ==========================================
+// ALLOWED CORS ORIGINS
+// ==========================================
+
+const allowedOrigins =
+  [
+    "http://localhost:5173",
+
+    process.env.CLIENT_URL,
+  ].filter(Boolean);
+
+// ==========================================
+// EXPRESS MIDDLEWARE
+// ==========================================
+
+app.use(
+  cors({
+    origin:
+      allowedOrigins,
+
+    credentials:
+      true,
+  })
+);
+
+app.use(
+  express.json()
+);
+
+// ==========================================
+// SOCKET.IO SERVER
+// ==========================================
+
+const io =
+  new Server(
+    server,
+    {
+      cors: {
+        origin:
+          allowedOrigins,
+
+        methods: [
+          "GET",
+          "POST",
+        ],
+
+        credentials:
+          true,
+      },
+    }
+  );
+
+// ==========================================
+// INITIALIZE SOCKET.IO
+// ==========================================
+
+initializeSocket(
+  io
+);
+
+// ==========================================
+// OPTIONAL: MAKE IO AVAILABLE IN ROUTES
+// ==========================================
+
+app.set(
+  "io",
+  io
+);
+
+// ==========================================
+// TEST ROUTE
+// ==========================================
+
+app.get(
+  "/",
+  (
+    req,
+    res
+  ) => {
+
+    res.json({
+      success:
+        true,
+
+      message:
+        "TaskFlow Backend is Running 🚀",
+    });
+
+  }
+);
+
+// ==========================================
+// API ROUTES
+// ==========================================
+
+// Authentication
 
 app.use(
   "/api/auth",
   authRoutes
 );
 
+// Users
+
 app.use(
   "/api/users",
   userRoutes
 );
+
+// Connections
 
 app.use(
   "/api/connections",
   connectionRoutes
 );
 
+// Tasks
+
 app.use(
   "/api/tasks",
-  require("./routes/taskRoutes")
+  taskRoutes
 );
+
+// Templates
 
 app.use(
   "/api/templates",
-  require("./routes/templateRoutes")
+  templateRoutes
 );
+
+// Notes
 
 app.use(
   "/api/notes",
   noteRoutes
 );
 
-// ==========================
+// ==========================================
+// 404 HANDLER
+// ==========================================
+
+app.use(
+  (
+    req,
+    res
+  ) => {
+
+    res.status(
+      404
+    ).json({
+      success:
+        false,
+
+      message:
+        "API route not found",
+    });
+
+  }
+);
+
+// ==========================================
+// SERVER ERROR HANDLER
+// ==========================================
+
+server.on(
+  "error",
+  (
+    error
+  ) => {
+
+    console.error(
+      "Server Error:",
+      error
+    );
+
+  }
+);
+
 // PORT
-// ==========================
 
 const PORT =
-  process.env.PORT || 5000;
+  process.env.PORT ||
+  5000;
 
-app.listen(PORT, () => {
-  console.log(
-    `Server running on port ${PORT}`
-  );
-});
+// START SERVER
+
+server.listen(
+  PORT,
+  () => {
+
+    console.log(
+      `🚀 TaskFlow server running on port ${PORT}`
+    );
+
+    console.log(
+      `🌐 Environment: ${
+        process.env.NODE_ENV ||
+        "development"
+      }`
+    );
+
+  }
+);

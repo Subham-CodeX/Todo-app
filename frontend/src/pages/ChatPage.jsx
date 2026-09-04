@@ -11,6 +11,7 @@ import {
   FaComments,
 } from "react-icons/fa";
 
+
 import ChatSidebar from
   "../components/chat/ChatSidebar";
 
@@ -29,10 +30,16 @@ import ConnectedUsers from
 import BlockedUsers from
   "../components/chat/BlockedUsers";
 
+import ChatWindow from
+  "../components/chat/ChatWindow";
+
 import "../styles/chat.css";
 
-
 export default function ChatPage() {
+
+  // =====================================
+  // ACTIVE CONNECTION TAB
+  // =====================================
 
   const [
     activeTab,
@@ -42,6 +49,21 @@ export default function ChatPage() {
       "connected"
     );
 
+  // =====================================
+  // SELECTED CHAT USER
+  // =====================================
+
+  const [
+    selectedChatUser,
+    setSelectedChatUser,
+  ] =
+    useState(
+      null
+    );
+
+  // =====================================
+  // CHAT SIDEBAR TABS
+  // =====================================
 
   const tabs = [
 
@@ -102,13 +124,52 @@ export default function ChatPage() {
 
   ];
 
+  // =====================================
+  // RENDER CHAT CONTENT
+  // =====================================
 
   const renderContent =
     () => {
 
+      // ================================
+      // OPEN REAL CHAT WINDOW
+      // ================================
+
+      if (
+        selectedChatUser
+      ) {
+
+        return (
+
+          <ChatWindow
+
+            user={
+              selectedChatUser
+            }
+
+            onBack={() =>
+              setSelectedChatUser(
+                null
+              )
+            }
+
+          />
+
+        );
+
+      }
+
+      // ================================
+      // CONNECTION SYSTEM TABS
+      // ================================
+
       switch (
         activeTab
       ) {
+
+        // ------------------------------
+        // SEARCH PEOPLE
+        // ------------------------------
 
         case "search":
 
@@ -116,6 +177,9 @@ export default function ChatPage() {
             <SearchPeople />
           );
 
+        // ------------------------------
+        // INCOMING REQUESTS
+        // ------------------------------
 
         case "incoming":
 
@@ -123,6 +187,9 @@ export default function ChatPage() {
             <IncomingRequests />
           );
 
+        // ------------------------------
+        // SENT REQUESTS
+        // ------------------------------
 
         case "sent":
 
@@ -130,6 +197,9 @@ export default function ChatPage() {
             <SentRequests />
           );
 
+        // ------------------------------
+        // BLOCKED USERS
+        // ------------------------------
 
         case "blocked":
 
@@ -137,19 +207,34 @@ export default function ChatPage() {
             <BlockedUsers />
           );
 
+        // ------------------------------
+        // CONNECTED USERS
+        // ------------------------------
 
         case "connected":
 
         default:
 
           return (
-            <ConnectedUsers />
+
+            <ConnectedUsers
+
+              onOpenChat={
+                (
+                  user
+                ) =>
+                  setSelectedChatUser(
+                    user
+                  )
+              }
+
+            />
+
           );
 
       }
 
     };
-
 
   return (
 
@@ -159,7 +244,9 @@ export default function ChatPage() {
       "
     >
 
-      {/* HEADER */}
+      {/* =================================
+          HEADER
+      ================================= */}
 
       <div
         className="
@@ -189,7 +276,9 @@ export default function ChatPage() {
       </div>
 
 
-      {/* MAIN */}
+      {/* =================================
+          MAIN CHAT LAYOUT
+      ================================= */}
 
       <div
         className="
@@ -197,16 +286,45 @@ export default function ChatPage() {
         "
       >
 
-        {/* SIDEBAR */}
+        {/* ===============================
+            CONNECTION SIDEBAR
+        =============================== */}
 
         <ChatSidebar
-          tabs={tabs}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
+
+          tabs={
+            tabs
+          }
+
+          activeTab={
+            activeTab
+          }
+
+          setActiveTab={
+            (
+              tab
+            ) => {
+
+              // Close open chat when
+              // navigating between sections
+
+              setSelectedChatUser(
+                null
+              );
+
+              setActiveTab(
+                tab
+              );
+
+            }
+          }
+
         />
 
 
-        {/* CONTENT */}
+        {/* ===============================
+            MAIN CONTENT
+        =============================== */}
 
         <div
           className="
