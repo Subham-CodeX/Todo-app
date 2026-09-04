@@ -12,6 +12,11 @@ const authRoutes =
 const userRoutes =
   require("./routes/userRoutes");
 
+const connectionRoutes =
+  require(
+    "./routes/connectionRoutes"
+  );
+
 connectDB();
 
 const app = express();
@@ -46,6 +51,11 @@ app.use(
 app.use(
   "/api/users",
   userRoutes
+);
+
+app.use(
+  "/api/connections",
+  connectionRoutes
 );
 
 app.use(

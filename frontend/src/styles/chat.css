@@ -1,0 +1,1682 @@
+/* =========================================================
+   TASKFLOW CHAT PAGE
+========================================================= */
+
+
+/* =========================================================
+   CHAT PAGE
+========================================================= */
+
+.chat-page {
+
+  width: 100%;
+
+  min-height: 100vh;
+
+  padding: 24px;
+
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.chat-page-header {
+
+  margin-bottom: 24px;
+
+}
+
+
+.chat-page-header h1 {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  margin: 0;
+
+  font-size: 30px;
+
+  font-weight: 700;
+
+  color: #ffffff;
+
+}
+
+
+.chat-page-header h1 svg {
+
+  color: #8b5cf6;
+
+}
+
+
+.chat-page-header p {
+
+  margin: 8px 0 0;
+
+  color: #9ca3af;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+
+}
+
+
+/* =========================================================
+   MAIN CHAT LAYOUT
+========================================================= */
+
+.chat-layout {
+
+  display: grid;
+
+  grid-template-columns:
+    230px
+    minmax(0, 1fr);
+
+  gap: 20px;
+
+  align-items: start;
+
+  min-height: 600px;
+
+}
+
+
+/* =========================================================
+   CHAT CONNECTION SIDEBAR
+========================================================= */
+
+.chat-sidebar {
+
+  width: 100%;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  padding: 12px;
+
+  background:
+    rgba(
+      20,
+      20,
+      30,
+      0.85
+    );
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+
+  border-radius: 18px;
+
+  height: fit-content;
+
+  position: sticky;
+
+  top: 20px;
+
+  box-shadow:
+    0
+    12px
+    35px
+    rgba(
+      0,
+      0,
+      0,
+      0.12
+    );
+
+}
+
+
+/* =========================================================
+   CHAT NAVIGATION ITEM
+========================================================= */
+
+.chat-nav-item {
+
+  width: 100%;
+
+  min-height: 48px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  border: none;
+
+  background:
+    transparent;
+
+  padding:
+    13px
+    14px;
+
+  border-radius:
+    12px;
+
+  cursor:
+    pointer;
+
+  color:
+    #a1a1aa;
+
+  font-size:
+    14px;
+
+  font-weight:
+    500;
+
+  text-align:
+    left;
+
+  transition:
+    all
+    0.25s
+    ease;
+
+}
+
+
+.chat-nav-item:hover {
+
+  background:
+    rgba(
+      139,
+      92,
+      246,
+      0.1
+    );
+
+  color:
+    #ffffff;
+
+  transform:
+    translateX(
+      2px
+    );
+
+}
+
+
+.chat-nav-item.active {
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #a855f7
+    );
+
+  color:
+    #ffffff;
+
+  box-shadow:
+    0
+    8px
+    24px
+    rgba(
+      124,
+      58,
+      237,
+      0.25
+    );
+
+}
+
+
+.chat-nav-icon {
+
+  width:
+    20px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  font-size:
+    16px;
+
+  flex-shrink:
+    0;
+
+}
+
+
+.chat-nav-label {
+
+  white-space:
+    nowrap;
+
+}
+
+
+/* =========================================================
+   CHAT CONTENT
+========================================================= */
+
+.chat-content {
+
+  width: 100%;
+
+  min-width: 0;
+
+  min-height: 600px;
+
+  padding:
+    24px;
+
+  background:
+    rgba(
+      20,
+      20,
+      30,
+      0.75
+    );
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+
+  border-radius:
+    18px;
+
+  box-shadow:
+    0
+    12px
+    35px
+    rgba(
+      0,
+      0,
+      0,
+      0.1
+    );
+
+}
+
+
+/* =========================================================
+   CHAT SECTION HEADER
+========================================================= */
+
+.chat-section-header {
+
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    center;
+
+  gap:
+    20px;
+
+  margin-bottom:
+    24px;
+
+}
+
+
+.chat-section-header h2 {
+
+  margin:
+    0;
+
+  color:
+    #ffffff;
+
+  font-size:
+    22px;
+
+  font-weight:
+    700;
+
+}
+
+
+.chat-section-header p {
+
+  margin:
+    6px
+    0
+    0;
+
+  color:
+    #9ca3af;
+
+  font-size:
+    14px;
+
+  line-height:
+    1.5;
+
+}
+
+
+/* =========================================================
+   SEARCH PEOPLE
+========================================================= */
+
+.people-search-form {
+
+  display:
+    flex;
+
+  gap:
+    12px;
+
+  margin-bottom:
+    24px;
+
+}
+
+
+.people-search-input {
+
+  flex:
+    1;
+
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  padding:
+    0
+    14px;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+
+  border-radius:
+    12px;
+
+  background:
+    rgba(
+      0,
+      0,
+      0,
+      0.2
+    );
+
+  color:
+    #9ca3af;
+
+  transition:
+    border
+    0.2s
+    ease,
+    box-shadow
+    0.2s
+    ease;
+
+}
+
+
+.people-search-input:focus-within {
+
+  border-color:
+    rgba(
+      139,
+      92,
+      246,
+      0.7
+    );
+
+  box-shadow:
+    0
+    0
+    0
+    3px
+    rgba(
+      139,
+      92,
+      246,
+      0.12
+    );
+
+}
+
+
+.people-search-input input {
+
+  width:
+    100%;
+
+  height:
+    48px;
+
+  border:
+    none;
+
+  outline:
+    none;
+
+  background:
+    transparent;
+
+  color:
+    #ffffff;
+
+  font-size:
+    14px;
+
+}
+
+
+.people-search-input input::placeholder {
+
+  color:
+    #71717a;
+
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
+========================================================= */
+
+.primary-chat-btn {
+
+  min-height:
+    48px;
+
+  border:
+    none;
+
+  padding:
+    0
+    24px;
+
+  border-radius:
+    12px;
+
+  cursor:
+    pointer;
+
+  color:
+    #ffffff;
+
+  font-weight:
+    600;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #a855f7
+    );
+
+  transition:
+    0.25s;
+
+}
+
+
+.primary-chat-btn:hover {
+
+  transform:
+    translateY(
+      -2px
+    );
+
+  box-shadow:
+    0
+    10px
+    25px
+    rgba(
+      124,
+      58,
+      237,
+      0.3
+    );
+
+}
+
+
+.primary-chat-btn:active {
+
+  transform:
+    translateY(
+      0
+    );
+
+}
+
+
+/* =========================================================
+   CONNECTION USERS LIST
+========================================================= */
+
+.connection-users-list {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    14px;
+
+}
+
+
+/* =========================================================
+   CONNECTION USER CARD
+========================================================= */
+
+.connection-user-card {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    16px;
+
+  padding:
+    16px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.03
+    );
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+
+  border-radius:
+    16px;
+
+  transition:
+    all
+    0.25s
+    ease;
+
+}
+
+
+.connection-user-card:hover {
+
+  transform:
+    translateY(
+      -2px
+    );
+
+  border-color:
+    rgba(
+      139,
+      92,
+      246,
+      0.35
+    );
+
+  background:
+    rgba(
+      139,
+      92,
+      246,
+      0.05
+    );
+
+  box-shadow:
+    0
+    12px
+    30px
+    rgba(
+      0,
+      0,
+      0,
+      0.1
+    );
+
+}
+
+
+/* =========================================================
+   USER AVATAR
+========================================================= */
+
+.connection-user-avatar {
+
+  width:
+    54px;
+
+  height:
+    54px;
+
+  flex-shrink:
+    0;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    50%;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  background:
+    rgba(
+      139,
+      92,
+      246,
+      0.12
+    );
+
+  color:
+    #a855f7;
+
+  font-size:
+    50px;
+
+}
+
+
+.connection-user-avatar img {
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    cover;
+
+}
+
+
+/* =========================================================
+   USER INFORMATION
+========================================================= */
+
+.connection-user-info {
+
+  flex:
+    1;
+
+  min-width:
+    0;
+
+}
+
+
+.connection-user-info h3 {
+
+  margin:
+    0;
+
+  color:
+    #ffffff;
+
+  font-size:
+    16px;
+
+  font-weight:
+    600;
+
+}
+
+
+.connection-user-role {
+
+  margin:
+    4px
+    0;
+
+  color:
+    #a855f7;
+
+  font-size:
+    13px;
+
+  font-weight:
+    500;
+
+}
+
+
+.connection-user-bio {
+
+  margin:
+    6px
+    0
+    0;
+
+  color:
+    #9ca3af;
+
+  font-size:
+    13px;
+
+  line-height:
+    1.5;
+
+  white-space:
+    nowrap;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+}
+
+
+/* =========================================================
+   USER ACTIONS
+========================================================= */
+
+.connection-user-actions {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  flex-shrink:
+    0;
+
+}
+
+
+.connection-user-actions button {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    8px;
+
+  min-height:
+    40px;
+
+  border:
+    none;
+
+  border-radius:
+    10px;
+
+  padding:
+    10px
+    14px;
+
+  cursor:
+    pointer;
+
+  font-size:
+    13px;
+
+  font-weight:
+    600;
+
+  transition:
+    all
+    0.2s
+    ease;
+
+}
+
+
+.connection-user-actions button:hover {
+
+  transform:
+    translateY(
+      -1px
+    );
+
+}
+
+
+.connection-user-actions button:disabled {
+
+  opacity:
+    0.6;
+
+  cursor:
+    not-allowed;
+
+  transform:
+    none;
+
+}
+
+
+/* =========================================================
+   CONNECTION BUTTONS
+========================================================= */
+
+.connect-btn {
+
+  background:
+    #7c3aed;
+
+  color:
+    #ffffff;
+
+}
+
+
+.connect-btn:hover {
+
+  background:
+    #6d28d9;
+
+}
+
+
+.accept-btn {
+
+  background:
+    #16a34a;
+
+  color:
+    #ffffff;
+
+}
+
+
+.reject-btn {
+
+  background:
+    rgba(
+      239,
+      68,
+      68,
+      0.12
+    );
+
+  color:
+    #f87171;
+
+}
+
+
+.block-btn {
+
+  background:
+    rgba(
+      239,
+      68,
+      68,
+      0.12
+    );
+
+  color:
+    #f87171;
+
+}
+
+
+.unblock-btn {
+
+  background:
+    #f59e0b;
+
+  color:
+    #ffffff;
+
+}
+
+
+.chat-user-btn {
+
+  background:
+    rgba(
+      59,
+      130,
+      246,
+      0.12
+    );
+
+  color:
+    #60a5fa;
+
+}
+
+
+/* =========================================================
+   PENDING BADGE
+========================================================= */
+
+.pending-badge {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    8px;
+
+  padding:
+    10px
+    14px;
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(
+      245,
+      158,
+      11,
+      0.1
+    );
+
+  color:
+    #fbbf24;
+
+  font-size:
+    13px;
+
+  font-weight:
+    600;
+
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.chat-empty-state {
+
+  min-height:
+    260px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  text-align:
+    center;
+
+  color:
+    #71717a;
+
+  border:
+    1px dashed
+    rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+
+  border-radius:
+    16px;
+
+  padding:
+    30px;
+
+}
+
+
+.chat-empty-state svg {
+
+  font-size:
+    35px;
+
+  margin-bottom:
+    12px;
+
+  color:
+    #a855f7;
+
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.chat-loading {
+
+  min-height:
+    200px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  color:
+    #a1a1aa;
+
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.chat-error {
+
+  padding:
+    12px
+    14px;
+
+  margin-bottom:
+    18px;
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(
+      239,
+      68,
+      68,
+      0.1
+    );
+
+  color:
+    #f87171;
+
+  font-size:
+    14px;
+
+}
+
+
+/* =========================================================
+   TASKFLOW CHAT — DESKTOP LAYOUT
+========================================================= */
+
+@media (min-width: 768px) {
+
+  /* =======================================================
+     CHAT PAGE
+  ======================================================= */
+
+  .chat-page {
+
+    width: calc(100% - 250px);
+
+    min-width: 0;
+
+    min-height: 100vh;
+
+    margin-left: 250px;
+
+    padding:
+      42px
+      36px
+      120px;
+
+    box-sizing: border-box;
+
+  }
+
+
+  /* =======================================================
+     PAGE HEADER
+  ======================================================= */
+
+  .chat-page-header {
+
+    margin-bottom: 28px;
+
+  }
+
+
+  .chat-page-header h1 {
+
+    font-size: 42px;
+
+    font-weight: 800;
+
+  }
+
+
+  .chat-page-header p {
+
+    font-size: 15px;
+
+  }
+
+
+  /* =======================================================
+     MAIN CHAT LAYOUT
+  ======================================================= */
+
+  .chat-layout {
+
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+      260px
+      minmax(0, 1fr);
+
+    gap: 24px;
+
+    align-items: start;
+
+    min-height: 650px;
+
+    min-width: 0;
+
+  }
+
+
+  /* =======================================================
+     CHAT CONNECTION SIDEBAR
+  ======================================================= */
+
+  .chat-sidebar {
+
+    width: 100%;
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    padding: 14px;
+
+    box-sizing: border-box;
+
+    border-radius: 20px;
+
+    background:
+      rgba(
+        20,
+        20,
+        40,
+        0.82
+      );
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.08
+      );
+
+    box-shadow:
+      0
+      20px
+      50px
+      rgba(
+        0,
+        0,
+        0,
+        0.18
+      );
+
+    position: sticky;
+
+    top: 24px;
+
+  }
+
+
+  /* =======================================================
+     CHAT NAVIGATION ITEMS
+  ======================================================= */
+
+  .chat-nav-item {
+
+    width: 100%;
+
+    min-height: 52px;
+
+    padding:
+      0
+      16px;
+
+    border-radius: 14px;
+
+    box-sizing: border-box;
+
+  }
+
+
+  /* =======================================================
+     CHAT CONTENT
+  ======================================================= */
+
+  .chat-content {
+
+    width: 100%;
+
+    min-width: 0;
+
+    min-height: 650px;
+
+    padding: 28px;
+
+    box-sizing: border-box;
+
+    border-radius: 24px;
+
+    background:
+      rgba(
+        20,
+        20,
+        40,
+        0.75
+      );
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.08
+      );
+
+    box-shadow:
+      0
+      20px
+      50px
+      rgba(
+        0,
+        0,
+        0,
+        0.16
+      );
+
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE AND TABLET
+========================================================= */
+
+@media (max-width: 767px) {
+
+  .chat-page {
+
+    padding:
+      16px;
+
+  }
+
+
+  .chat-page-header {
+
+    margin-bottom:
+      20px;
+
+  }
+
+
+  /* =====================================
+     SINGLE COLUMN
+  ===================================== */
+
+  .chat-layout {
+
+    grid-template-columns:
+      1fr;
+
+    gap:
+      16px;
+
+    min-height:
+      auto;
+
+  }
+
+
+  /* =====================================
+     HORIZONTAL CHAT NAVIGATION
+  ===================================== */
+
+  .chat-sidebar {
+
+    position:
+      static;
+
+    flex-direction:
+      row;
+
+    overflow-x:
+      auto;
+
+    overflow-y:
+      hidden;
+
+    padding:
+      8px;
+
+    gap:
+      8px;
+
+    scrollbar-width:
+      none;
+
+  }
+
+
+  .chat-sidebar::-webkit-scrollbar {
+
+    display:
+      none;
+
+  }
+
+
+  .chat-nav-item {
+
+    width:
+      48px;
+
+    min-width:
+      48px;
+
+    height:
+      48px;
+
+    min-height:
+      48px;
+
+    flex-shrink:
+      0;
+
+    justify-content:
+      center;
+
+    padding:
+      0;
+
+    border-radius:
+      12px;
+
+  }
+
+
+  .chat-nav-item:hover {
+
+    transform:
+      none;
+
+  }
+
+
+  .chat-nav-label {
+
+    display:
+      none;
+
+  }
+
+
+  .chat-nav-icon {
+
+    width:
+      auto;
+
+    font-size:
+      17px;
+
+  }
+
+
+  /* =====================================
+     CONTENT
+  ===================================== */
+
+  .chat-content {
+
+    padding:
+      18px;
+
+    min-height:
+      500px;
+
+    border-radius:
+      18px;
+
+  }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .chat-page-header h1 {
+
+    font-size:
+      25px;
+
+  }
+
+
+  .chat-page-header p {
+
+    font-size:
+      13px;
+
+  }
+
+
+  /* =====================================
+     SECTION HEADER
+  ===================================== */
+
+  .chat-section-header {
+
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+    gap:
+      6px;
+
+  }
+
+
+  /* =====================================
+     SEARCH
+  ===================================== */
+
+  .people-search-form {
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .primary-chat-btn {
+
+    width:
+      100%;
+
+    height:
+      46px;
+
+  }
+
+
+  /* =====================================
+     USER CARD
+  ===================================== */
+
+  .connection-user-card {
+
+    align-items:
+      flex-start;
+
+    flex-wrap:
+      wrap;
+
+    gap:
+      14px;
+
+  }
+
+
+  .connection-user-info {
+
+    min-width:
+      calc(
+        100% -
+        70px
+      );
+
+  }
+
+
+  .connection-user-bio {
+
+    white-space:
+      normal;
+
+  }
+
+
+  /* =====================================
+     USER ACTIONS
+  ===================================== */
+
+  .connection-user-actions {
+
+    width:
+      100%;
+
+    margin-top:
+      4px;
+
+  }
+
+
+  .connection-user-actions button {
+
+    flex:
+      1;
+
+  }
+
+
+  .pending-badge {
+
+    width:
+      100%;
+
+    justify-content:
+      center;
+
+  }
+
+
+  /* =====================================
+     EMPTY STATE
+  ===================================== */
+
+  .chat-empty-state {
+
+    min-height:
+      220px;
+
+    padding:
+      24px;
+
+  }
+
+}

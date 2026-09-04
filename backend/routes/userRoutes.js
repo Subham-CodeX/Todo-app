@@ -7,6 +7,7 @@ const {
   updateProfile,
   changePassword,
   uploadProfileImage,
+  searchUsers,
 } = require("../controllers/userController");
 
 const profileUpload =
@@ -17,6 +18,16 @@ const protect =
 
 // Every profile endpoint requires login
 router.use(protect);
+
+// ==========================================
+// SEARCH USERS
+// GET /api/users/search?q=subham
+// ==========================================
+
+router.get(
+  "/search",
+  searchUsers
+);
 
 // GET /api/users/profile
 router.get(
@@ -41,5 +52,6 @@ router.put(
   "/change-password",
   changePassword
 );
+
 
 module.exports = router;

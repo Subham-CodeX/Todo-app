@@ -101,24 +101,23 @@ function Navbar({ onAddTask }) {
 
 
       {/* =====================
-          CHAT
-          MOBILE ONLY
-      ===================== */}
+              CHAT
+          ===================== */}
 
-      <NavLink
-        to="/chat"
-        className={({ isActive }) =>
-          isActive
-            ? "nav-item mobile-only-nav active"
-            : "nav-item mobile-only-nav"
-        }
-      >
-        <FaComments />
+          <NavLink
+            to="/chat"
+            className={({ isActive }) =>
+              isActive
+                ? "nav-item active"
+                : "nav-item"
+            }
+          >
+            <FaComments />
 
-        <span className="nav-label">
-          Chat
-        </span>
-      </NavLink>
+            <span className="nav-label">
+              Chat
+            </span>
+          </NavLink>
 
 
       {/* =====================
