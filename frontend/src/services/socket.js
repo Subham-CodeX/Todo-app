@@ -7,17 +7,18 @@ let socket =
   null;
 
 
-// ==========================================
-// CONNECT SOCKET
-// ==========================================
-
 export const connectSocket =
   (
     token
   ) => {
 
+    // ======================================
+    // ALREADY CONNECTED
+    // ======================================
+
     if (
-      socket?.connected
+      socket &&
+      socket.connected
     ) {
 
       return socket;
@@ -25,32 +26,85 @@ export const connectSocket =
     }
 
 
+    // ======================================
+    // SOCKET ALREADY CREATED
+    // ======================================
+
+    if (
+      socket &&
+      !socket.connected
+    ) {
+
+      socket.connect();
+
+      return socket;
+
+    }
+
+
+    // ======================================
+    // CREATE SOCKET
+    // ======================================
+
     socket =
       io(
-        import.meta.env
-          .VITE_API_URL,
+        import.meta.env.VITE_API_URL,
         {
-          transports:
-            [
-              "websocket",
-              "polling",
-            ],
 
-          auth:
-            {
-              token,
-            },
+          autoConnect:
+            false,
+
+          transports: [
+            "websocket",
+            "polling",
+          ],
+
+          auth: {
+            token,
+          },
+
+          reconnection:
+            true,
+
+          reconnectionAttempts:
+            10,
+
+          reconnectionDelay:
+            1000,
+
+          reconnectionDelayMax:
+            5000,
+
         }
       );
 
+
+    // ======================================
+    // EVENTS
+    // ======================================
 
     socket.on(
       "connect",
       () => {
 
         console.log(
-          "Socket connected:",
+          "🟢 Socket connected:",
           socket.id
+        );
+
+      }
+    );
+
+
+    socket.on(
+      "disconnect",
+      (
+        reason
+      ) => {
+
+        console.log(
+          "🔴 Socket disconnected:",
+          reason
         );
 
       }
@@ -72,24 +126,16 @@ export const connectSocket =
     );
 
 
-    socket.on(
-      "disconnect",
-      (
-        reason
-      ) => {
+    // ======================================
+    // CONNECT
+    // ======================================
 
-        console.log(
-          "Socket disconnected:",
-          reason
-        );
-
-      }
-    );
+    socket.connect();
 
 
     return socket;
 
-  };
+};
 
 
 // ==========================================

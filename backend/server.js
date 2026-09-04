@@ -1,28 +1,18 @@
 require("dotenv").config();
 
-const http =
-  require("http");
+const http = require("http");
 
-const express =
-  require("express");
+const express = require("express");
 
-const cors =
-  require("cors");
+const cors = require("cors");
 
-const {
-  Server,
-} =
-  require("socket.io");
+const { Server } = require("socket.io");
 
 const connectDB =
   require("./config/db");
 
 const initializeSocket =
   require("./socket/socketServer");
-
-// ==========================================
-// ROUTES
-// ==========================================
 
 const noteRoutes =
   require("./routes/noteRoutes");
@@ -33,14 +23,6 @@ const authRoutes =
 const userRoutes =
   require("./routes/userRoutes");
 
-const connectionRoutes =
-  require("./routes/connectionRoutes");
-
-const taskRoutes =
-  require("./routes/taskRoutes");
-
-const templateRoutes =
-  require("./routes/templateRoutes");
 
 // ==========================================
 // CONNECT DATABASE
@@ -48,15 +30,17 @@ const templateRoutes =
 
 connectDB();
 
+
 // ==========================================
-// CREATE EXPRESS APP
+// EXPRESS APP
 // ==========================================
 
 const app =
   express();
 
+
 // ==========================================
-// CREATE HTTP SERVER
+// HTTP SERVER
 // ==========================================
 
 const server =
@@ -64,74 +48,168 @@ const server =
     app
   );
 
+
 // ==========================================
-// ALLOWED CORS ORIGINS
+// ALLOWED ORIGINS
 // ==========================================
 
-const allowedOrigins =
-  [
-    "http://localhost:5173",
+const allowedOrigins = [
 
-    process.env.CLIENT_URL,
-  ].filter(Boolean);
+  "http://localhost:5173",
+
+  "http://127.0.0.1:5173",
+
+  "https://todo-app-xi-five-57.vercel.app",
+
+  process.env.CLIENT_URL,
+
+]
+  .filter(Boolean)
+  .map(
+    (origin) =>
+      origin.replace(
+        /\/$/,
+        ""
+      )
+  );
+
+
+// ==========================================
+// CORS OPTIONS
+// ==========================================
+
+const corsOptions = {
+
+  origin:
+    (
+      origin,
+      callback
+    ) => {
+
+      // Allow requests without Origin
+      // such as Postman or server-to-server
+
+      if (
+        !origin
+      ) {
+
+        return callback(
+          null,
+          true
+        );
+
+      }
+
+
+      const normalizedOrigin =
+        origin.replace(
+          /\/$/,
+          ""
+        );
+
+
+      if (
+        allowedOrigins.includes(
+          normalizedOrigin
+        )
+      ) {
+
+        return callback(
+          null,
+          true
+        );
+
+      }
+
+
+      console.error(
+        "CORS blocked origin:",
+        origin
+      );
+
+
+      return callback(
+        new Error(
+          "Not allowed by CORS"
+        )
+      );
+
+    },
+
+  credentials:
+    true,
+
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+  ],
+
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+  ],
+
+};
+
 
 // ==========================================
 // EXPRESS MIDDLEWARE
 // ==========================================
 
 app.use(
-  cors({
-    origin:
-      allowedOrigins,
-
-    credentials:
-      true,
-  })
+  cors(
+    corsOptions
+  )
 );
 
 app.use(
-  express.json()
+  express.json({
+    limit:
+      "10mb",
+  })
 );
 
+
 // ==========================================
-// SOCKET.IO SERVER
+// SOCKET.IO
 // ==========================================
 
 const io =
   new Server(
     server,
     {
+
       cors: {
+
         origin:
-          allowedOrigins,
+          corsOptions.origin,
+
+        credentials:
+          true,
 
         methods: [
           "GET",
           "POST",
         ],
 
-        credentials:
-          true,
       },
+
     }
   );
 
+
 // ==========================================
-// INITIALIZE SOCKET.IO
+// INITIALIZE SOCKET
 // ==========================================
 
 initializeSocket(
   io
 );
 
-// ==========================================
-// OPTIONAL: MAKE IO AVAILABLE IN ROUTES
-// ==========================================
-
-app.set(
-  "io",
-  io
-);
 
 // ==========================================
 // TEST ROUTE
@@ -144,114 +222,114 @@ app.get(
     res
   ) => {
 
-    res.json({
+    res.status(200).json({
+
       success:
         true,
 
       message:
         "TaskFlow Backend is Running 🚀",
+
+      environment:
+        process.env.NODE_ENV ||
+        "development",
+
     });
 
   }
 );
 
+
 // ==========================================
 // API ROUTES
 // ==========================================
-
-// Authentication
 
 app.use(
   "/api/auth",
   authRoutes
 );
 
-// Users
-
 app.use(
   "/api/users",
   userRoutes
 );
 
-// Connections
-
-app.use(
-  "/api/connections",
-  connectionRoutes
-);
-
-// Tasks
-
 app.use(
   "/api/tasks",
-  taskRoutes
+  require(
+    "./routes/taskRoutes"
+  )
 );
-
-// Templates
 
 app.use(
   "/api/templates",
-  templateRoutes
+  require(
+    "./routes/templateRoutes"
+  )
 );
-
-// Notes
 
 app.use(
   "/api/notes",
   noteRoutes
 );
 
+
 // ==========================================
-// 404 HANDLER
+// CORS ERROR HANDLER
 // ==========================================
 
 app.use(
   (
+    error,
     req,
-    res
+    res,
+    next
   ) => {
 
-    res.status(
-      404
-    ).json({
-      success:
-        false,
+    if (
+      error.message ===
+      "Not allowed by CORS"
+    ) {
 
-      message:
-        "API route not found",
-    });
+      return res
+        .status(403)
+        .json({
 
-  }
-);
+          success:
+            false,
 
-// ==========================================
-// SERVER ERROR HANDLER
-// ==========================================
+          message:
+            "CORS request blocked",
 
-server.on(
-  "error",
-  (
-    error
-  ) => {
+        });
 
-    console.error(
-      "Server Error:",
+    }
+
+
+    next(
       error
     );
 
   }
 );
 
-// PORT
+
+// ==========================================
+// SERVER PORT
+// ==========================================
 
 const PORT =
   process.env.PORT ||
   5000;
 
+
+// ==========================================
 // START SERVER
+// ==========================================
 
 server.listen(
   PORT,
+  "0.0.0.0",
   () => {
 
     console.log(
@@ -263,6 +341,14 @@ server.listen(
         process.env.NODE_ENV ||
         "development"
       }`
+    );
+
+    console.log(
+      "🔗 Allowed Origins:"
+    );
+
+    console.log(
+      allowedOrigins
     );
 
   }
