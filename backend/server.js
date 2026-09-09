@@ -49,120 +49,66 @@ const server =
   );
 
 
-const allowedOrigins =
-  [
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://todo-app-xi-five-57.vercel.app",
+  "https://localhost",
+  process.env.CLIENT_URL,
+]
+  .filter(Boolean)
+  .map((origin) =>
+    origin.replace(/\/+$/, "")
+  );
 
-    "http://localhost:5173",
+const corsOptions = {
+  origin: (origin, callback) => {
 
-    "http://127.0.0.1:5173",
+    // Allow Postman, mobile/native requests,
+    // and server-to-server requests with no Origin header.
+    if (!origin) {
+      return callback(null, true);
+    }
 
-    "https://todo-app-xi-five-57.vercel.app",
+    const normalizedOrigin =
+      origin.replace(/\/+$/, "");
 
-    process.env.CLIENT_URL,
+    if (
+      allowedOrigins.includes(
+        normalizedOrigin
+      )
+    ) {
+      return callback(null, true);
+    }
 
-  ]
-    .filter(Boolean)
-    .map(
-      (origin) =>
-        origin.replace(
-          /\/$/,
-          ""
-        )
+    console.error(
+      "CORS blocked origin:",
+      origin
     );
 
+    return callback(
+      new Error(
+        "Not allowed by CORS"
+      )
+    );
+  },
 
-const corsOptions =
-  {
+  credentials: true,
 
-    origin:
-      (
-        origin,
-        callback
-      ) => {
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+  ],
 
-        // Allow Postman
-        // and server-to-server requests
-
-        if (
-          !origin
-        ) {
-
-          return callback(
-            null,
-            true
-          );
-
-        }
-
-
-        const normalizedOrigin =
-          origin.replace(
-            /\/$/,
-            ""
-          );
-
-
-        if (
-          allowedOrigins.includes(
-            normalizedOrigin
-          )
-        ) {
-
-          return callback(
-            null,
-            true
-          );
-
-        }
-
-
-        console.error(
-          "CORS blocked origin:",
-          origin
-        );
-
-
-        return callback(
-          new Error(
-            "Not allowed by CORS"
-          )
-        );
-
-      },
-
-
-    credentials:
-      true,
-
-
-    methods:
-      [
-
-        "GET",
-
-        "POST",
-
-        "PUT",
-
-        "PATCH",
-
-        "DELETE",
-
-        "OPTIONS",
-
-      ],
-
-
-    allowedHeaders:
-      [
-
-        "Content-Type",
-
-        "Authorization",
-
-      ],
-
-  };
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+  ],
+};
 
 app.use(
   cors(
