@@ -1,13 +1,20 @@
 const express =
-  require("express");
+  require(
+    "express"
+  );
+
 
 const router =
   express.Router();
 
-const protect =
+
+const {
+  protect,
+} =
   require(
     "../middleware/authMiddleware"
   );
+
 
 const {
   sendRequest,
@@ -54,10 +61,12 @@ router.post(
   sendRequest
 );
 
+
 router.get(
   "/requests/incoming",
   getIncomingRequests
 );
+
 
 router.get(
   "/requests/sent",
@@ -74,6 +83,7 @@ router.put(
   acceptRequest
 );
 
+
 router.put(
   "/:id/reject",
   rejectRequest
@@ -89,10 +99,12 @@ router.get(
   getBlockedUsers
 );
 
+
 router.put(
   "/block/:userId",
   blockUser
 );
+
 
 router.delete(
   "/block/:userId",

@@ -13,14 +13,20 @@ import {
   getSocket,
 } from "../../services/socket";
 
+import {
+  getChatMessages,
+} from "../../services/messageApi";
 
 export default function ChatWindow({
 
   user,
-
   onBack,
 
 }) {
+
+  // ========================================
+  // MESSAGES
+  // ========================================
 
   const [
     messages,
@@ -30,6 +36,22 @@ export default function ChatWindow({
       []
     );
 
+  // ========================================
+  // LOADING
+  // ========================================
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(
+      true
+    );
+
+  // ========================================
+  // INPUT
+  // ========================================
+
   const [
     input,
     setInput,
@@ -38,44 +60,283 @@ export default function ChatWindow({
       ""
     );
 
+
+  // ========================================
+  // MESSAGE END REF
+  // ========================================
+
   const messagesEndRef =
     useRef(
       null
     );
 
+  // ========================================
+  // SOCKET REF
+  // ========================================
+
+  const socket =
+    getSocket();
 
   // ========================================
-  // SCROLL TO BOTTOM
+  // MESSAGE ID HELPER
+  // ========================================
+
+  const getMessageId =
+    (
+      message
+    ) => {
+
+      return (
+
+        message.id ||
+
+        message.message_id ||
+
+        `${
+
+          message.senderId ||
+
+          message.sender_id
+
+        }-${
+
+          message.receiverId ||
+
+          message.receiver_id
+
+        }-${
+
+          message.createdAt ||
+
+          message.created_at
+
+        }-${
+
+          message.text ||
+
+          message.message ||
+
+          ""
+
+        }`
+
+      );
+
+    };
+
+  // ========================================
+  // GET SENDER ID
+  // ========================================
+
+  const getSenderId =
+    (
+      message
+    ) => {
+
+      return (
+
+        message.senderId ||
+
+        message.sender_id
+
+      );
+
+    };
+
+  // ========================================
+  // GET RECEIVER ID
+  // ========================================
+
+  const getReceiverId =
+    (
+      message
+    ) => {
+
+      return (
+
+        message.receiverId ||
+
+        message.receiver_id
+
+      );
+
+    };
+
+  // ========================================
+  // GET MESSAGE TEXT
+  // ========================================
+
+  const getMessageText =
+    (
+      message
+    ) => {
+
+      return (
+
+        message.text ||
+
+        message.message ||
+
+        ""
+
+      );
+
+    };
+
+
+  // ========================================
+  // NORMALIZE MESSAGE
+  // ========================================
+
+  const normalizeMessage =
+    (
+      message
+    ) => {
+
+      if (
+        !message
+      ) {
+
+        return null;
+
+      }
+
+
+      return {
+
+        ...message,
+
+        id:
+          getMessageId(
+            message
+          ),
+
+        senderId:
+          getSenderId(
+            message
+          ),
+
+        receiverId:
+          getReceiverId(
+            message
+          ),
+
+        text:
+          getMessageText(
+            message
+          ),
+
+        createdAt:
+
+          message.createdAt ||
+
+          message.created_at ||
+
+          new Date().toISOString(),
+
+      };
+
+    };
+
+
+  // ========================================
+  // LOAD PERSISTENT CHAT HISTORY
   // ========================================
 
   useEffect(
+
     () => {
 
-      messagesEndRef.current
-        ?.scrollIntoView(
-          {
-            behavior:
-              "smooth",
+      const loadMessages =
+        async () => {
+
+          try {
+
+            setLoading(
+              true
+            );
+
+
+            const data =
+              await getChatMessages(
+
+                user._id
+
+              );
+
+
+            const loadedMessages =
+              (
+                data.messages ||
+                []
+              )
+                .map(
+                  (
+                    message
+                  ) =>
+                    normalizeMessage(
+                      message
+                    )
+                )
+                .filter(
+                  Boolean
+                );
+
+
+            setMessages(
+              loadedMessages
+            );
+
           }
-        );
+
+          catch (
+            error
+          ) {
+
+            console.error(
+
+              "LOAD CHAT ERROR:",
+
+              error
+
+            );
+
+
+            setMessages(
+              []
+            );
+
+          }
+
+          finally {
+
+            setLoading(
+              false
+            );
+
+          }
+
+        };
+
+
+      loadMessages();
 
     },
+
     [
-      messages,
+      user._id,
     ]
+
   );
 
 
   // ========================================
-  // RECEIVE MESSAGE
+  // RECEIVE REAL-TIME MESSAGE
   // ========================================
 
   useEffect(
+
     () => {
-
-      const socket =
-        getSocket();
-
 
       if (
         !socket
@@ -91,47 +352,115 @@ export default function ChatWindow({
           message
         ) => {
 
+          const normalizedMessage =
+            normalizeMessage(
+              message
+            );
+
+
           if (
-            message.senderId ===
+            !normalizedMessage
+          ) {
+
+            return;
+
+          }
+
+
+          const senderId =
+            normalizedMessage.senderId;
+
+
+          // --------------------------------
+          // ONLY CURRENT CHAT
+          // --------------------------------
+
+          if (
+            senderId !==
             user._id
           ) {
 
-            setMessages(
-              (
-                current
-              ) => [
-
-                ...current,
-
-                message,
-
-              ]
-            );
+            return;
 
           }
+
+
+          setMessages(
+
+            (
+              previous
+            ) => {
+
+              const messageId =
+                normalizedMessage.id;
+
+
+              const alreadyExists =
+                previous.some(
+
+                  (
+                    item
+                  ) =>
+                    getMessageId(
+                      item
+                    ) ===
+                    messageId
+
+                );
+
+
+              if (
+                alreadyExists
+              ) {
+
+                return previous;
+
+              }
+
+
+              return [
+
+                ...previous,
+
+                normalizedMessage,
+
+              ];
+
+            }
+
+          );
 
         };
 
 
       socket.on(
+
         "receive_message",
+
         handleReceiveMessage
+
       );
 
 
       return () => {
 
         socket.off(
+
           "receive_message",
+
           handleReceiveMessage
+
         );
 
       };
 
     },
+
     [
       user._id,
+      socket,
     ]
+
   );
 
 
@@ -140,11 +469,8 @@ export default function ChatWindow({
   // ========================================
 
   useEffect(
+
     () => {
-
-      const socket =
-        getSocket();
-
 
       if (
         !socket
@@ -160,68 +486,351 @@ export default function ChatWindow({
           message
         ) => {
 
-          if (
-            message.receiverId ===
-            user._id
-          ) {
-
-            setMessages(
-              (
-                current
-              ) => {
-
-                const exists =
-                  current.some(
-                    (
-                      item
-                    ) =>
-                      item.id ===
-                      message.id
-                  );
-
-
-                if (
-                  exists
-                ) {
-                  return current;
-                }
-
-
-                return [
-
-                  ...current,
-
-                  message,
-
-                ];
-
-              }
+          const normalizedMessage =
+            normalizeMessage(
+              message
             );
 
+
+          if (
+            !normalizedMessage
+          ) {
+
+            return;
+
           }
+
+
+          // --------------------------------
+          // ONLY CURRENT CHAT
+          // --------------------------------
+
+          if (
+
+            normalizedMessage.receiverId !==
+            user._id
+
+          ) {
+
+            return;
+
+          }
+
+
+          setMessages(
+
+            (
+              previous
+            ) => {
+
+              const messageId =
+                normalizedMessage.id;
+
+
+              const alreadyExists =
+                previous.some(
+
+                  (
+                    item
+                  ) =>
+                    getMessageId(
+                      item
+                    ) ===
+                    messageId
+
+                );
+
+
+              if (
+                alreadyExists
+              ) {
+
+                return previous;
+
+              }
+
+
+              return [
+
+                ...previous,
+
+                normalizedMessage,
+
+              ];
+
+            }
+
+          );
 
         };
 
 
       socket.on(
+
         "message_sent",
+
         handleMessageSent
+
       );
 
 
       return () => {
 
         socket.off(
+
           "message_sent",
+
           handleMessageSent
+
         );
 
       };
 
     },
+
     [
       user._id,
+      socket,
     ]
+
+  );
+
+
+  // ========================================
+  // RECEIVE OFFLINE MESSAGES
+  // ========================================
+
+  useEffect(
+
+    () => {
+
+      if (
+        !socket
+      ) {
+
+        return;
+
+      }
+
+
+      const handleOfflineMessages =
+        (
+          offlineMessages
+        ) => {
+
+          if (
+            !Array.isArray(
+              offlineMessages
+            )
+          ) {
+
+            return;
+
+          }
+
+
+          // --------------------------------
+          // NORMALIZE
+          // --------------------------------
+
+          const normalizedMessages =
+            offlineMessages
+              .map(
+                (
+                  message
+                ) =>
+                  normalizeMessage(
+                    message
+                  )
+              )
+              .filter(
+                Boolean
+              );
+
+
+          // --------------------------------
+          // CURRENT CONVERSATION ONLY
+          // --------------------------------
+
+          const relevantMessages =
+            normalizedMessages.filter(
+
+              (
+                message
+              ) => {
+
+                const senderId =
+                  message.senderId;
+
+
+                const receiverId =
+                  message.receiverId;
+
+
+                return (
+
+                  senderId ===
+                    user._id
+
+                  ||
+
+                  receiverId ===
+                    user._id
+
+                );
+
+              }
+
+            );
+
+
+          if (
+            relevantMessages.length ===
+            0
+          ) {
+
+            return;
+
+          }
+
+
+          setMessages(
+
+            (
+              previous
+            ) => {
+
+              const combined = [
+
+                ...previous,
+
+                ...relevantMessages,
+
+              ];
+
+
+              // --------------------------------
+              // REMOVE DUPLICATES
+              // --------------------------------
+
+              const uniqueMessages =
+                Array.from(
+
+                  new Map(
+
+                    combined.map(
+
+                      (
+                        item
+                      ) => [
+
+                        getMessageId(
+                          item
+                        ),
+
+                        item,
+
+                      ]
+
+                    )
+
+                  ).values()
+
+                );
+
+
+              // --------------------------------
+              // SORT BY CREATED TIME
+              // --------------------------------
+
+              uniqueMessages.sort(
+
+                (
+                  first,
+                  second
+                ) => {
+
+                  return (
+
+                    new Date(
+                      first.createdAt
+                    ) -
+
+                    new Date(
+                      second.createdAt
+                    )
+
+                  );
+
+                }
+
+              );
+
+
+              return uniqueMessages;
+
+            }
+
+          );
+
+        };
+
+
+      socket.on(
+
+        "offline_messages",
+
+        handleOfflineMessages
+
+      );
+
+
+      return () => {
+
+        socket.off(
+
+          "offline_messages",
+
+          handleOfflineMessages
+
+        );
+
+      };
+
+    },
+
+    [
+      user._id,
+      socket,
+    ]
+
+  );
+
+
+  // ========================================
+  // SCROLL TO BOTTOM
+  // ========================================
+
+  useEffect(
+
+    () => {
+
+      messagesEndRef.current
+        ?.scrollIntoView(
+
+          {
+            behavior:
+              "smooth",
+          }
+
+        );
+
+    },
+
+    [
+      messages,
+    ]
+
   );
 
 
@@ -241,6 +850,10 @@ export default function ChatWindow({
         input.trim();
 
 
+      // --------------------------------
+      // EMPTY MESSAGE
+      // --------------------------------
+
       if (
         !text
       ) {
@@ -250,17 +863,22 @@ export default function ChatWindow({
       }
 
 
-      const socket =
-        getSocket();
-
+      // --------------------------------
+      // SOCKET CHECK
+      // --------------------------------
 
       if (
+
         !socket ||
+
         !socket.connected
+
       ) {
 
         alert(
+
           "Chat server is not connected"
+
         );
 
         return;
@@ -268,14 +886,21 @@ export default function ChatWindow({
       }
 
 
+      // --------------------------------
+      // SEND TO SERVER
+      // --------------------------------
+
       socket.emit(
+
         "send_message",
 
         {
+
           receiverId:
             user._id,
 
           text,
+
         },
 
         (
@@ -283,12 +908,15 @@ export default function ChatWindow({
         ) => {
 
           if (
-            !response.success
+            !response?.success
           ) {
 
             alert(
-              response.message ||
+
+              response?.message ||
+
               "Failed to send message"
+
             );
 
             return;
@@ -296,8 +924,13 @@ export default function ChatWindow({
           }
 
         }
+
       );
 
+
+      // --------------------------------
+      // CLEAR INPUT
+      // --------------------------------
 
       setInput(
         ""
@@ -305,6 +938,48 @@ export default function ChatWindow({
 
     };
 
+
+  // ========================================
+  // HANDLE ENTER KEY
+  // ========================================
+
+  const handleKeyDown =
+    (
+      event
+    ) => {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
+        if (
+          event.shiftKey
+        ) {
+
+          return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        const form =
+          event.currentTarget
+            .form;
+
+
+        form?.requestSubmit();
+
+      }
+
+    };
+
+
+  // ========================================
+  // RENDER
+  // ========================================
 
   return (
 
@@ -314,7 +989,9 @@ export default function ChatWindow({
       "
     >
 
+      {/* ================================== */}
       {/* HEADER */}
+      {/* ================================== */}
 
       <div
         className="
@@ -324,6 +1001,8 @@ export default function ChatWindow({
 
         <button
 
+          type="button"
+
           className="
             chat-back-btn
           "
@@ -331,6 +1010,10 @@ export default function ChatWindow({
           onClick={
             onBack
           }
+
+          aria-label="
+            Back to chats
+          "
 
         >
 
@@ -345,6 +1028,8 @@ export default function ChatWindow({
           "
         >
 
+          {/* AVATAR */}
+
           <div
             className="
               real-chat-avatar
@@ -353,30 +1038,40 @@ export default function ChatWindow({
 
             {
               user.profileImage
+
                 ? (
 
                   <img
+
                     src={
                       user.profileImage
                     }
 
                     alt={
-                      user.name
+                      user.name ||
+                      "User"
                     }
+
                   />
 
                 )
+
                 : (
 
                   user.name
                     ?.charAt(0)
-                    ?.toUpperCase()
+                    ?.toUpperCase() ||
+
+                  "U"
 
                 )
+
             }
 
           </div>
 
+
+          {/* USER INFO */}
 
           <div>
 
@@ -402,7 +1097,9 @@ export default function ChatWindow({
       </div>
 
 
+      {/* ================================== */}
       {/* MESSAGES */}
+      {/* ================================== */}
 
       <div
         className="
@@ -410,9 +1107,36 @@ export default function ChatWindow({
         "
       >
 
+        {/* LOADING */}
+
         {
+          loading &&
+
+          (
+
+            <div
+              className="
+                chat-loading
+              "
+            >
+
+              Loading messages...
+
+            </div>
+
+          )
+
+        }
+
+
+        {/* EMPTY STATE */}
+
+        {
+          !loading &&
+
           messages.length ===
           0 &&
+
           (
 
             <div
@@ -427,17 +1151,42 @@ export default function ChatWindow({
             </div>
 
           )
+
         }
 
 
+        {/* MESSAGE LIST */}
+
         {
+          !loading &&
+
           messages.map(
+
             (
               message
             ) => {
 
+              const senderId =
+                getSenderId(
+                  message
+                );
+
+
+              const receiverId =
+                getReceiverId(
+                  message
+                );
+
+
+              const messageText =
+                getMessageText(
+                  message
+                );
+
+
               const isMe =
-                message.receiverId ===
+
+                receiverId ===
                 user._id;
 
 
@@ -446,7 +1195,9 @@ export default function ChatWindow({
                 <div
 
                   key={
-                    message.id
+                    getMessageId(
+                      message
+                    )
                   }
 
                   className={
@@ -454,7 +1205,9 @@ export default function ChatWindow({
                     `chat-message-row
                     ${
                       isMe
+
                         ? "chat-message-me"
+
                         : "chat-message-other"
                     }`
 
@@ -469,7 +1222,7 @@ export default function ChatWindow({
                   >
 
                     {
-                      message.text
+                      messageText
                     }
 
                   </div>
@@ -479,9 +1232,13 @@ export default function ChatWindow({
               );
 
             }
+
           )
+
         }
 
+
+        {/* SCROLL ANCHOR */}
 
         <div
           ref={
@@ -492,7 +1249,9 @@ export default function ChatWindow({
       </div>
 
 
+      {/* ================================== */}
       {/* INPUT */}
+      {/* ================================== */}
 
       <form
 
@@ -519,21 +1278,44 @@ export default function ChatWindow({
           }
 
           onChange={
+
             (
               event
             ) =>
+
               setInput(
+
                 event
                   .target
                   .value
+
               )
+
           }
+
+          onKeyDown={
+            handleKeyDown
+          }
+
+          autoComplete="
+            off
+          "
 
         />
 
 
         <button
+
           type="submit"
+
+          disabled={
+            !input.trim()
+          }
+
+          aria-label="
+            Send message
+          "
+
         >
 
           <FaPaperPlane />

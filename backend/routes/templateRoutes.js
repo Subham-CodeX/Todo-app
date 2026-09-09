@@ -1,7 +1,12 @@
-const express = require("express");
+const express =
+  require(
+    "express"
+  );
+
 
 const router =
   express.Router();
+
 
 const {
   createTemplate,
@@ -9,41 +14,58 @@ const {
   deleteTemplate,
   updateTemplate,
   useTemplate,
-} = require(
-  "../controllers/taskController"
-);
+} =
+  require(
+    "../controllers/taskController"
+  );
 
-const protect =
+
+const {
+  protect,
+} =
   require(
     "../middleware/authMiddleware"
   );
 
-// Every template route requires login
-router.use(protect);
+
+// ==========================================
+// EVERY TEMPLATE ROUTE REQUIRES LOGIN
+// ==========================================
+
+router.use(
+  protect
+);
+
 
 router.post(
   "/",
   createTemplate
 );
 
+
 router.get(
   "/",
   getTemplates
 );
+
 
 router.put(
   "/:id",
   updateTemplate
 );
 
+
 router.delete(
   "/:id",
   deleteTemplate
 );
+
 
 router.post(
   "/:id/use",
   useTemplate
 );
 
-module.exports = router;
+
+module.exports =
+  router;

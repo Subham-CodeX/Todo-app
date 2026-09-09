@@ -1,42 +1,84 @@
-const express = require("express");
+const express =
+  require(
+    "express"
+  );
+
 
 const router =
   express.Router();
+
 
 const {
   getNotes,
   createNote,
   updateNote,
   deleteNote,
-} = require(
-  "../controllers/noteController"
-);
+} =
+  require(
+    "../controllers/noteController"
+  );
 
-const protect =
+
+const {
+  protect,
+} =
   require(
     "../middleware/authMiddleware"
   );
 
-router.use(protect);
+
+// ==========================================
+// PROTECT ALL NOTE ROUTES
+// ==========================================
+
+router.use(
+  protect
+);
+
+
+// ==========================================
+// GET NOTES
+// ==========================================
 
 router.get(
   "/",
   getNotes
 );
 
+
+// ==========================================
+// CREATE NOTE
+// ==========================================
+
 router.post(
   "/",
   createNote
 );
+
+
+// ==========================================
+// UPDATE NOTE
+// ==========================================
 
 router.put(
   "/:id",
   updateNote
 );
 
+
+// ==========================================
+// DELETE NOTE
+// ==========================================
+
 router.delete(
   "/:id",
   deleteNote
 );
 
-module.exports = router;
+
+// ==========================================
+// EXPORT ROUTER
+// ==========================================
+
+module.exports =
+  router;

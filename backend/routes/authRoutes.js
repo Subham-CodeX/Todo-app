@@ -1,7 +1,12 @@
-const express = require("express");
+const express =
+  require(
+    "express"
+  );
+
 
 const router =
   express.Router();
+
 
 const {
   register,
@@ -13,14 +18,19 @@ const {
   verifyResetOTP,
   resetPassword,
   resendResetOTP,
-} = require(
-  "../controllers/authController"
-);
+} =
+  require(
+    "../controllers/authController"
+  );
 
-const protect =
+
+const {
+  protect,
+} =
   require(
     "../middleware/authMiddleware"
   );
+
 
 // ============================================
 // REGISTER
@@ -31,6 +41,7 @@ router.post(
   register
 );
 
+
 // ============================================
 // VERIFY EMAIL
 // ============================================
@@ -39,6 +50,7 @@ router.post(
   "/verify-email",
   verifyEmail
 );
+
 
 // ============================================
 // RESEND EMAIL OTP
@@ -49,6 +61,7 @@ router.post(
   resendEmailOTP
 );
 
+
 // ============================================
 // LOGIN
 // ============================================
@@ -57,6 +70,7 @@ router.post(
   "/login",
   login
 );
+
 
 // ============================================
 // CURRENT USER
@@ -68,6 +82,7 @@ router.get(
   getMe
 );
 
+
 // ============================================
 // FORGOT PASSWORD
 // ============================================
@@ -76,6 +91,7 @@ router.post(
   "/forgot-password",
   forgotPassword
 );
+
 
 // ============================================
 // VERIFY RESET OTP
@@ -86,6 +102,7 @@ router.post(
   verifyResetOTP
 );
 
+
 // ============================================
 // RESEND PASSWORD RESET OTP
 // ============================================
@@ -94,6 +111,7 @@ router.post(
   "/resend-reset-otp",
   resendResetOTP
 );
+
 
 // ============================================
 // RESET PASSWORD
@@ -104,4 +122,6 @@ router.post(
   resetPassword
 );
 
-module.exports = router;
+
+module.exports =
+  router;

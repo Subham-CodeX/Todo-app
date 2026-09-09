@@ -9,13 +9,10 @@ const router =
 
 
 const {
-  createTask,
-  getTasks,
-  deleteTask,
-  updateTask,
+  getMessages,
 } =
   require(
-    "../controllers/taskController"
+    "../controllers/messageController"
   );
 
 
@@ -28,37 +25,23 @@ const {
 
 
 // ==========================================
-// EVERY TASK ROUTE REQUIRES LOGIN
+// GET CHAT HISTORY
 // ==========================================
 
-router.use(
-  protect
-);
-
-
 router.get(
-  "/",
-  getTasks
+
+  "/:userId",
+
+  protect,
+
+  getMessages
+
 );
 
 
-router.post(
-  "/",
-  createTask
-);
-
-
-router.delete(
-  "/:id",
-  deleteTask
-);
-
-
-router.put(
-  "/:id",
-  updateTask
-);
-
+// ==========================================
+// EXPORT ROUTER
+// ==========================================
 
 module.exports =
   router;
