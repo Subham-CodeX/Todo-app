@@ -51,12 +51,13 @@ module.exports =
         try {
 
           // ----------------------------------
-          // GET TOKEN
+          // GET JWT TOKEN
           // ----------------------------------
 
           const token =
-            socket.handshake
-              .auth
+            socket
+              .handshake
+              ?.auth
               ?.token;
 
 
@@ -65,11 +66,9 @@ module.exports =
           ) {
 
             return next(
-
               new Error(
                 "Authentication required"
               )
-
             );
 
           }
@@ -89,15 +88,27 @@ module.exports =
             );
 
 
+          if (
+            !decoded ||
+            !decoded.id
+          ) {
+
+            return next(
+              new Error(
+                "Invalid authentication token"
+              )
+            );
+
+          }
+
+
           // ----------------------------------
           // FIND USER
           // ----------------------------------
 
           const user =
             await User.findById(
-
               decoded.id
-
             );
 
 
@@ -106,18 +117,16 @@ module.exports =
           ) {
 
             return next(
-
               new Error(
                 "User not found"
               )
-
             );
 
           }
 
 
           // ----------------------------------
-          // ATTACH USER TO SOCKET
+          // ATTACH AUTHENTICATED USER
           // ----------------------------------
 
           socket.user =
@@ -156,12 +165,10 @@ module.exports =
           );
 
 
-          next(
-
+          return next(
             new Error(
               "Invalid authentication token"
             )
-
           );
 
         }
@@ -222,15 +229,15 @@ module.exports =
 
           const offlineMessages =
             await getOfflineMessages(
-
               userId
-
             );
 
 
           if (
 
-            offlineMessages &&
+            Array.isArray(
+              offlineMessages
+            ) &&
 
             offlineMessages.length >
             0
@@ -244,9 +251,9 @@ module.exports =
             );
 
 
-            // ------------------------------
+            // --------------------------------
             // SEND OFFLINE MESSAGES
-            // ------------------------------
+            // --------------------------------
 
             socket.emit(
 
@@ -257,9 +264,9 @@ module.exports =
             );
 
 
-            // ------------------------------
+            // --------------------------------
             // GET MESSAGE IDS
-            // ------------------------------
+            // --------------------------------
 
             const messageIds =
               offlineMessages
@@ -269,6 +276,8 @@ module.exports =
                   (
                     message
                   ) =>
+
+                    message.messageId ||
 
                     message.message_id ||
 
@@ -281,13 +290,15 @@ module.exports =
                 );
 
 
-            // ------------------------------
-            // MARK AS DELIVERED
-            // ------------------------------
+            // --------------------------------
+            // MARK DELIVERED
+            // --------------------------------
 
             if (
+
               messageIds.length >
               0
+
             ) {
 
               await markMessagesDelivered(
@@ -314,6 +325,11 @@ module.exports =
 
           );
 
+
+          // Do not disconnect the socket.
+          // The client can synchronize later
+          // through REST API.
+
         }
 
 
@@ -333,6 +349,29 @@ module.exports =
             try {
 
               // =================================
+              // VALIDATE PAYLOAD
+              // =================================
+
+              if (
+                !payload ||
+                typeof payload !==
+                "object"
+              ) {
+
+                return callback?.({
+
+                  success:
+                    false,
+
+                  message:
+                    "Invalid message payload",
+
+                });
+
+              }
+
+
+              // =================================
               // EXTRACT PAYLOAD
               // =================================
 
@@ -340,33 +379,25 @@ module.exports =
                 receiverId,
                 message,
                 text,
+                clientMessageId,
+                conversationId,
               } =
-                payload ||
-                {};
+                payload;
 
 
-              /*
-               * Support both:
-               *
-               * message
-               *
-               * and older:
-               *
-               * text
-               *
-               * payload formats.
-               */
+              // =================================
+              // NORMALIZE MESSAGE TEXT
+              // =================================
 
               const messageText =
-                (
+                String(
 
                   message ??
-
                   text ??
-
                   ""
 
-                ).trim();
+                )
+                  .trim();
 
 
               // =================================
@@ -412,12 +443,60 @@ module.exports =
 
 
               // =================================
+              // VALIDATE CLIENT MESSAGE ID
+              // =================================
+
+              if (
+                !clientMessageId
+              ) {
+
+                return callback?.({
+
+                  success:
+                    false,
+
+                  message:
+                    "clientMessageId is required",
+
+                });
+
+              }
+
+
+              const normalizedClientMessageId =
+                String(
+                  clientMessageId
+                ).trim();
+
+
+              if (
+                !normalizedClientMessageId
+              ) {
+
+                return callback?.({
+
+                  success:
+                    false,
+
+                  message:
+                    "Invalid clientMessageId",
+
+                });
+
+              }
+
+
+              // =================================
               // PREVENT SELF MESSAGE
               // =================================
 
               if (
-                receiverId ===
-                userId
+                String(
+                  receiverId
+                ) ===
+                String(
+                  userId
+                )
               ) {
 
                 return callback?.({
@@ -434,16 +513,23 @@ module.exports =
 
 
               // =================================
-              // CHECK ACCEPTED CONNECTION
+              // CHECK CONNECTION
+              // =================================
+              //
+              // IMPORTANT:
+              //
+              // We intentionally do NOT filter
+              // status = "accepted" here.
+              //
+              // Otherwise a blocked connection
+              // cannot be detected separately.
+              //
               // =================================
 
               const connection =
                 await Connection.findOne(
 
                   {
-
-                    status:
-                      "accepted",
 
                     $or:
                       [
@@ -475,6 +561,10 @@ module.exports =
                 );
 
 
+              // =================================
+              // NO CONNECTION
+              // =================================
+
               if (
                 !connection
               ) {
@@ -493,7 +583,7 @@ module.exports =
 
 
               // =================================
-              // BLOCK CHECK
+              // BLOCKED CONNECTION
               // =================================
 
               if (
@@ -515,7 +605,39 @@ module.exports =
 
 
               // =================================
+              // CONNECTION MUST BE ACCEPTED
+              // =================================
+
+              if (
+                connection.status !==
+                "accepted"
+              ) {
+
+                return callback?.({
+
+                  success:
+                    false,
+
+                  message:
+                    "You can only message an accepted connection",
+
+                });
+
+              }
+
+
+              // =================================
               // SAVE MESSAGE
+              // =================================
+              //
+              // clientMessageId is extremely
+              // important for offline-first
+              // synchronization.
+              //
+              // The message service must later
+              // persist this value in MongoDB
+              // with a UNIQUE index.
+              //
               // =================================
 
               const savedMessage =
@@ -532,17 +654,65 @@ module.exports =
                     message:
                       messageText,
 
+                    text:
+                      messageText,
+
+                    clientMessageId:
+                      normalizedClientMessageId,
+
+                    conversationId:
+                      conversationId ||
+                      null,
+
                   }
 
                 );
 
 
+              // =================================
+              // SAFETY CHECK
+              // =================================
+
+              if (
+                !savedMessage
+              ) {
+
+                return callback?.({
+
+                  success:
+                    false,
+
+                  message:
+                    "Failed to save message",
+
+                });
+
+              }
+
+
+              // =================================
+              // GET MESSAGE ID
+              // =================================
+
+              const savedMessageId =
+
+                savedMessage.messageId ||
+
+                savedMessage.message_id ||
+
+                savedMessage.id;
+
+
               console.log(
 
-                `💾 Message saved: ${
-                  savedMessage.message_id ||
-                  savedMessage.id
-                }`
+                `💾 Message saved: ${savedMessageId}`
+
+              );
+
+
+              console.log(
+
+                `🆔 Client message ID: ${normalizedClientMessageId}`
 
               );
 
@@ -555,9 +725,7 @@ module.exports =
                 await io
 
                   .in(
-
                     `user:${receiverId}`
-
                   )
 
                   .fetchSockets();
@@ -569,19 +737,12 @@ module.exports =
 
 
               // =================================
-              // MARK DELIVERED
+              // UPDATE DELIVERY STATUS
               // =================================
 
               if (
                 receiverOnline
               ) {
-
-                const savedMessageId =
-
-                  savedMessage.message_id ||
-
-                  savedMessage.id;
-
 
                 if (
                   savedMessageId
@@ -598,6 +759,11 @@ module.exports =
 
                 savedMessage.status =
                   "delivered";
+
+
+                savedMessage.deliveredAt =
+                  new Date();
+
 
               }
 
@@ -627,7 +793,13 @@ module.exports =
 
 
               // =================================
-              // SEND BACK TO SENDER
+              // SEND TO SENDER
+              // =================================
+              //
+              // This allows the sender's local
+              // pending message to be reconciled
+              // with the server version.
+              //
               // =================================
 
               socket.emit(
@@ -669,12 +841,17 @@ module.exports =
               );
 
 
+              // =================================
+              // SEND FAILURE TO CLIENT
+              // =================================
+
               callback?.({
 
                 success:
                   false,
 
                 message:
+                  error.message ||
                   "Failed to send message",
 
               });
@@ -686,9 +863,232 @@ module.exports =
         );
 
 
-        // ==================================
+        // ======================================
+        // MARK MESSAGE AS READ
+        // ======================================
+
+        socket.on(
+
+          "mark_message_read",
+
+          async (
+            payload,
+            callback
+          ) => {
+
+            try {
+
+              const {
+                messageId,
+              } =
+                payload ||
+                {};
+
+
+              if (
+                !messageId
+              ) {
+
+                return callback?.({
+
+                  success:
+                    false,
+
+                  message:
+                    "Message ID is required",
+
+                });
+
+              }
+
+
+              /*
+               *
+               * The permanent MongoDB
+               * implementation will update
+               * the message here.
+               *
+               * For the current transitional
+               * service, this event is kept
+               * ready for the MongoDB service.
+               *
+               */
+
+
+              callback?.({
+
+                success:
+                  true,
+
+                messageId:
+
+                  messageId,
+
+              });
+
+            }
+
+            catch (
+              error
+            ) {
+
+              console.error(
+
+                "Mark Message Read Error:",
+
+                error
+
+              );
+
+
+              callback?.({
+
+                success:
+                  false,
+
+                message:
+                  "Failed to mark message as read",
+
+              });
+
+            }
+
+          }
+
+        );
+
+
+        // ======================================
+        // TYPING START
+        // ======================================
+
+        socket.on(
+
+          "typing_start",
+
+          (
+            payload
+          ) => {
+
+            const {
+              receiverId,
+            } =
+              payload ||
+              {};
+
+
+            if (
+              !receiverId
+            ) {
+
+              return;
+
+            }
+
+
+            if (
+              String(
+                receiverId
+              ) ===
+              String(
+                userId
+              )
+            ) {
+
+              return;
+
+            }
+
+
+            io.to(
+
+              `user:${receiverId}`
+
+            ).emit(
+
+              "typing_start",
+
+              {
+
+                userId:
+                  userId,
+
+              }
+
+            );
+
+          }
+
+        );
+
+
+        // ======================================
+        // TYPING STOP
+        // ======================================
+
+        socket.on(
+
+          "typing_stop",
+
+          (
+            payload
+          ) => {
+
+            const {
+              receiverId,
+            } =
+              payload ||
+              {};
+
+
+            if (
+              !receiverId
+            ) {
+
+              return;
+
+            }
+
+
+            if (
+              String(
+                receiverId
+              ) ===
+              String(
+                userId
+              )
+            ) {
+
+              return;
+
+            }
+
+
+            io.to(
+
+              `user:${receiverId}`
+
+            ).emit(
+
+              "typing_stop",
+
+              {
+
+                userId:
+                  userId,
+
+              }
+
+            );
+
+          }
+
+        );
+
+
+        // ======================================
         // DISCONNECT
-        // ==================================
+        // ======================================
 
         socket.on(
 

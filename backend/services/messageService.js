@@ -1,775 +1,654 @@
-const crypto =
-  require(
-    "crypto"
-  );
+const crypto = require("crypto");
+const mongoose = require("mongoose");
 
+const Message = require("../models/Message");
+const User = require("../models/User");
 
-const db =
-  require(
-    "../database/chatDatabase"
-  );
+// ============================================
+// HELPERS
+// ============================================
 
+const generateMessageId = () => {
+  return crypto.randomUUID();
+};
 
-// ==========================================
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
+
+// ============================================
+// FORMAT MESSAGE
+// ============================================
+
+const formatMessage = (message) => {
+  if (!message) {
+    return null;
+  }
+
+  return {
+    id: message._id?.toString(),
+
+    messageId: message.messageId,
+    message_id: message.messageId,
+
+    clientMessageId:
+      message.clientMessageId,
+
+    client_message_id:
+      message.clientMessageId,
+
+    senderId:
+      message.senderId?.toString(),
+
+    sender_id:
+      message.senderId?.toString(),
+
+    receiverId:
+      message.receiverId?.toString(),
+
+    receiver_id:
+      message.receiverId?.toString(),
+
+    text: message.text,
+
+    message: message.text,
+
+    status: message.status,
+
+    createdAt:
+      message.createdAt,
+
+    created_at:
+      message.createdAt,
+
+    deliveredAt:
+      message.deliveredAt || null,
+
+    delivered_at:
+      message.deliveredAt || null,
+
+    readAt:
+      message.readAt || null,
+
+    read_at:
+      message.readAt || null,
+  };
+};
+
+// ============================================
+// ENSURE USER EXISTS
+// ============================================
+
+const ensureUserExists = async (
+  userId
+) => {
+  if (!isValidObjectId(userId)) {
+    return null;
+  }
+
+  return User.findById(userId)
+    .select("_id")
+    .lean();
+};
+
+// ============================================
 // SAVE MESSAGE
-// ==========================================
+// ============================================
 
-function saveMessage({
-
+const saveMessage = async ({
   senderId,
-
   receiverId,
-
   message,
-
-}) {
-
-  // ========================================
-  // VALIDATION
-  // ========================================
-
-  if (
-    !senderId
-  ) {
-
+  text,
+  clientMessageId,
+}) => {
+  if (!isValidObjectId(senderId)) {
     throw new Error(
-      "Sender ID is required"
+      "Invalid sender ID"
     );
-
   }
 
-
-  if (
-    !receiverId
-  ) {
-
+  if (!isValidObjectId(receiverId)) {
     throw new Error(
-      "Receiver ID is required"
+      "Invalid receiver ID"
     );
-
   }
 
-
   if (
-    !message ||
-    !message.trim()
+    senderId.toString() ===
+    receiverId.toString()
   ) {
+    throw new Error(
+      "You cannot send a message to yourself"
+    );
+  }
 
+  const sender =
+    await ensureUserExists(senderId);
+
+  if (!sender) {
+    throw new Error(
+      "Sender account not found"
+    );
+  }
+
+  const receiver =
+    await ensureUserExists(receiverId);
+
+  if (!receiver) {
+    throw new Error(
+      "Receiver account not found"
+    );
+  }
+
+  const messageText = String(
+    text !== undefined
+      ? text
+      : message !== undefined
+      ? message
+      : ""
+  ).trim();
+
+  if (!messageText) {
     throw new Error(
       "Message cannot be empty"
     );
-
   }
 
-
-  // ========================================
-  // GENERATE MESSAGE ID
-  // ========================================
-
-  const messageId =
-    crypto.randomUUID();
-
-
-  // ========================================
-  // INSERT MESSAGE
-  // ========================================
-
-  const statement =
-    db.prepare(`
-
-      INSERT INTO messages (
-
-        message_id,
-
-        sender_id,
-
-        receiver_id,
-
-        message,
-
-        status
-
-      )
-
-      VALUES (
-
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-
-      )
-
-    `);
-
-
-  statement.run(
-
-    messageId,
-
-    senderId,
-
-    receiverId,
-
-    message.trim(),
-
-    "sent"
-
-  );
-
-
-  // ========================================
-  // GET SAVED MESSAGE
-  // ========================================
-
-  const savedMessage =
-    db
-
-      .prepare(`
-
-        SELECT
-
-          message_id,
-
-          sender_id,
-
-          receiver_id,
-
-          message,
-
-          status,
-
-          created_at,
-
-          delivered_at,
-
-          read_at
-
-        FROM messages
-
-        WHERE message_id = ?
-
-      `)
-
-      .get(
-        messageId
-      );
-
-
-  if (
-    !savedMessage
-  ) {
-
+  if (messageText.length > 10000) {
     throw new Error(
-      "Failed to save message"
+      "Message is too long"
     );
-
   }
 
+  const finalClientMessageId =
+    clientMessageId &&
+    String(clientMessageId).trim()
+      ? String(clientMessageId).trim()
+      : crypto.randomUUID();
+
+  // ==========================================
+  // IDEMPOTENCY
+  // ==========================================
+
+  const existingMessage =
+    await Message.findOne({
+      clientMessageId:
+        finalClientMessageId,
+    });
+
+  if (existingMessage) {
+    return formatMessage(
+      existingMessage
+    );
+  }
+
+  // ==========================================
+  // CREATE
+  // ==========================================
+
+  const messageDocument =
+    new Message({
+      messageId:
+        generateMessageId(),
+
+      clientMessageId:
+        finalClientMessageId,
+
+      senderId,
+
+      receiverId,
+
+      text: messageText,
+
+      status: "sent",
+    });
+
+  try {
+    await messageDocument.save();
+  } catch (error) {
+    // ========================================
+    // DUPLICATE RETRY
+    // ========================================
+
+    if (
+      error?.code === 11000
+    ) {
+      const duplicate =
+        await Message.findOne({
+          clientMessageId:
+            finalClientMessageId,
+        });
+
+      if (duplicate) {
+        return formatMessage(
+          duplicate
+        );
+      }
+    }
+
+    throw error;
+  }
 
   return formatMessage(
-    savedMessage
+    messageDocument
   );
+};
 
-}
-
-
-// ==========================================
+// ============================================
 // GET CHAT HISTORY
-// ==========================================
+// ============================================
 
-function getChatHistory({
-
+const getChatHistory = async ({
   userId,
-
   otherUserId,
-
   limit = 100,
-
-}) {
-
-  // ========================================
-  // VALIDATION
-  // ========================================
-
-  if (
-    !userId
-  ) {
-
+  before = null,
+}) => {
+  if (!isValidObjectId(userId)) {
     throw new Error(
-      "User ID is required"
+      "Invalid user ID"
     );
-
   }
 
-
-  if (
-    !otherUserId
-  ) {
-
+  if (!isValidObjectId(otherUserId)) {
     throw new Error(
-      "Other user ID is required"
+      "Invalid other user ID"
     );
-
   }
 
+  let safeLimit =
+    Number(limit);
 
-  // ========================================
-  // SAFE LIMIT
-  // ========================================
+  if (
+    !Number.isInteger(safeLimit) ||
+    safeLimit <= 0
+  ) {
+    safeLimit = 100;
+  }
 
-  const safeLimit =
-    Math.min(
-
-      Math.max(
-
-        Number(
-          limit
-        ) || 100,
-
-        1
-
-      ),
-
-      500
-
-    );
-
-
-  // ========================================
-  // GET MESSAGES
-  // ========================================
-
-  const statement =
-    db.prepare(`
-
-      SELECT
-
-        message_id,
-
-        sender_id,
-
-        receiver_id,
-
-        message,
-
-        status,
-
-        created_at,
-
-        delivered_at,
-
-        read_at
-
-      FROM messages
-
-      WHERE
-
-        (
-
-          sender_id = ?
-
-          AND
-
-          receiver_id = ?
-
-        )
-
-        OR
-
-        (
-
-          sender_id = ?
-
-          AND
-
-          receiver_id = ?
-
-        )
-
-      ORDER BY
-
-        created_at ASC
-
-      LIMIT ?
-
-    `);
-
-
-  const messages =
-    statement.all(
-
-      userId,
-
-      otherUserId,
-
-      otherUserId,
-
-      userId,
-
-      safeLimit
-
-    );
-
-
-  return messages.map(
-
-    (
-      message
-    ) =>
-      formatMessage(
-        message
-      )
-
+  safeLimit = Math.min(
+    safeLimit,
+    100
   );
 
-}
-
-
-// ==========================================
-// GET OFFLINE MESSAGES
-// ==========================================
-
-function getOfflineMessages(
-  userId
-) {
-
-  if (
-    !userId
-  ) {
-
-    throw new Error(
-      "User ID is required"
-    );
-
-  }
-
-
-  const statement =
-    db.prepare(`
-
-      SELECT
-
-        message_id,
-
-        sender_id,
-
-        receiver_id,
-
-        message,
-
-        status,
-
-        created_at,
-
-        delivered_at,
-
-        read_at
-
-      FROM messages
-
-      WHERE
-
-        receiver_id = ?
-
-        AND
-
-        status = 'sent'
-
-      ORDER BY
-
-        created_at ASC
-
-    `);
-
-
-  const messages =
-    statement.all(
-      userId
-    );
-
-
-  return messages.map(
-
-    (
-      message
-    ) =>
-      formatMessage(
-        message
-      )
-
-  );
-
-}
-
-
-// ==========================================
-// MARK SINGLE MESSAGE DELIVERED
-// ==========================================
-
-function markDelivered(
-  messageId
-) {
-
-  if (
-    !messageId
-  ) {
-
-    return;
-
-  }
-
-
-  const statement =
-    db.prepare(`
-
-      UPDATE messages
-
-      SET
-
-        status = 'delivered',
-
-        delivered_at =
-          CURRENT_TIMESTAMP
-
-      WHERE
-
-        message_id = ?
-
-        AND
-
-        status = 'sent'
-
-    `);
-
-
-  statement.run(
-    messageId
-  );
-
-}
-
-
-// ==========================================
-// MARK MULTIPLE MESSAGES DELIVERED
-// ==========================================
-
-function markMessagesDelivered(
-  messageIds
-) {
-
-  if (
-    !Array.isArray(
-      messageIds
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  if (
-    messageIds.length ===
-    0
-  ) {
-
-    return;
-
-  }
-
-
-  const validMessageIds =
-    messageIds.filter(
-      Boolean
-    );
-
-
-  if (
-    validMessageIds.length ===
-    0
-  ) {
-
-    return;
-
-  }
-
-
-  const placeholders =
-    validMessageIds
-
-      .map(
-        () => "?"
-      )
-
-      .join(
-        ","
-      );
-
-
-  const statement =
-    db.prepare(`
-
-      UPDATE messages
-
-      SET
-
-        status = 'delivered',
-
-        delivered_at =
-          CURRENT_TIMESTAMP
-
-      WHERE
-
-        message_id IN (
-
-          ${placeholders}
-
-        )
-
-        AND
-
-        status = 'sent'
-
-    `);
-
-
-  statement.run(
-    ...validMessageIds
-  );
-
-}
-
-
-// ==========================================
-// MARK MESSAGE READ
-// ==========================================
-
-function markMessageRead(
-  messageId
-) {
-
-  if (
-    !messageId
-  ) {
-
-    return;
-
-  }
-
-
-  const statement =
-    db.prepare(`
-
-      UPDATE messages
-
-      SET
-
-        status = 'read',
-
-        read_at =
-          CURRENT_TIMESTAMP
-
-      WHERE
-
-        message_id = ?
-
-    `);
-
-
-  statement.run(
-    messageId
-  );
-
-}
-
-
-// ==========================================
-// MARK CONVERSATION READ
-// ==========================================
-
-function markConversationRead({
-
-  userId,
-
-  otherUserId,
-
-}) {
-
-  if (
-    !userId ||
-    !otherUserId
-  ) {
-
-    return;
-
-  }
-
-
-  const statement =
-    db.prepare(`
-
-      UPDATE messages
-
-      SET
-
-        status = 'read',
-
-        read_at =
-          CURRENT_TIMESTAMP
-
-      WHERE
-
-        sender_id = ?
-
-        AND
-
-        receiver_id = ?
-
-        AND
-
-        status != 'read'
-
-    `);
-
-
-  statement.run(
-
-    otherUserId,
-
-    userId
-
-  );
-
-}
-
-
-// ==========================================
-// FORMAT MESSAGE
-// ==========================================
-
-function formatMessage(
-  message
-) {
-
-  if (
-    !message
-  ) {
-
-    return null;
-
-  }
-
-
-  return {
-
-    // --------------------------------------
-    // COMMON ID
-    // --------------------------------------
-
-    id:
-      message.message_id,
-
-
-    message_id:
-      message.message_id,
-
-
-    // --------------------------------------
-    // SENDER
-    // --------------------------------------
-
-    senderId:
-      message.sender_id,
-
-
-    sender_id:
-      message.sender_id,
-
-
-    // --------------------------------------
-    // RECEIVER
-    // --------------------------------------
-
-    receiverId:
-      message.receiver_id,
-
-
-    receiver_id:
-      message.receiver_id,
-
-
-    // --------------------------------------
-    // MESSAGE CONTENT
-    // --------------------------------------
-
-    text:
-      message.message,
-
-
-    message:
-      message.message,
-
-
-    // --------------------------------------
-    // STATUS
-    // --------------------------------------
-
-    status:
-      message.status,
-
-
-    // --------------------------------------
-    // TIMESTAMPS
-    // --------------------------------------
-
-    createdAt:
-      message.created_at,
-
-
-    created_at:
-      message.created_at,
-
-
-    deliveredAt:
-      message.delivered_at,
-
-
-    delivered_at:
-      message.delivered_at,
-
-
-    readAt:
-      message.read_at,
-
-
-    read_at:
-      message.read_at,
-
+  const query = {
+    $or: [
+      {
+        senderId: userId,
+        receiverId: otherUserId,
+      },
+      {
+        senderId: otherUserId,
+        receiverId: userId,
+      },
+    ],
   };
 
-}
+  if (before) {
+    const beforeDate =
+      new Date(before);
 
+    if (
+      !Number.isNaN(
+        beforeDate.getTime()
+      )
+    ) {
+      query.createdAt = {
+        $lt: beforeDate,
+      };
+    }
+  }
 
-// ==========================================
-// EXPORTS
-// ==========================================
+  const messages =
+    await Message.find(query)
+      .sort({
+        createdAt: -1,
+      })
+      .limit(safeLimit)
+      .lean();
+
+  messages.reverse();
+
+  return messages.map(
+    formatMessage
+  );
+};
+
+// ============================================
+// GET NEWER MESSAGES
+// ============================================
+//
+// Used by local synchronization.
+//
+// after = latest locally known server time.
+//
+// ============================================
+
+const getMessagesAfter = async ({
+  userId,
+  otherUserId,
+  after = null,
+  limit = 200,
+}) => {
+  if (!isValidObjectId(userId)) {
+    throw new Error(
+      "Invalid user ID"
+    );
+  }
+
+  if (!isValidObjectId(otherUserId)) {
+    throw new Error(
+      "Invalid user ID"
+    );
+  }
+
+  let safeLimit =
+    Number(limit);
+
+  if (
+    !Number.isInteger(safeLimit) ||
+    safeLimit <= 0
+  ) {
+    safeLimit = 200;
+  }
+
+  safeLimit = Math.min(
+    safeLimit,
+    500
+  );
+
+  const query = {
+    $or: [
+      {
+        senderId: userId,
+        receiverId: otherUserId,
+      },
+      {
+        senderId: otherUserId,
+        receiverId: userId,
+      },
+    ],
+  };
+
+  // ==========================================
+  // AFTER CURSOR
+  // ==========================================
+
+  if (after) {
+    const afterDate =
+      new Date(after);
+
+    if (
+      !Number.isNaN(
+        afterDate.getTime()
+      )
+    ) {
+      query.createdAt = {
+        $gt: afterDate,
+      };
+    }
+  }
+
+  const messages =
+    await Message.find(query)
+      .sort({
+        createdAt: 1,
+      })
+      .limit(safeLimit)
+      .lean();
+
+  return messages.map(
+    formatMessage
+  );
+};
+
+// ============================================
+// GET OFFLINE MESSAGES
+// ============================================
+
+const getOfflineMessages =
+  async (userId) => {
+    if (!isValidObjectId(userId)) {
+      throw new Error(
+        "Invalid user ID"
+      );
+    }
+
+    const messages =
+      await Message.find({
+        receiverId: userId,
+
+        status: {
+          $in: ["sent"],
+        },
+      })
+        .sort({
+          createdAt: 1,
+        })
+        .limit(500)
+        .lean();
+
+    return messages.map(
+      formatMessage
+    );
+  };
+
+// ============================================
+// MARK DELIVERED
+// ============================================
+
+const markDelivered =
+  async (messageId) => {
+    if (!messageId) {
+      return null;
+    }
+
+    const message =
+      await Message.findOneAndUpdate(
+        {
+          messageId,
+
+          status: {
+            $in: [
+              "sent",
+              "pending",
+            ],
+          },
+        },
+        {
+          $set: {
+            status: "delivered",
+
+            deliveredAt:
+              new Date(),
+          },
+        },
+        {
+          new: true,
+        }
+      ).lean();
+
+    return formatMessage(
+      message
+    );
+  };
+
+// ============================================
+// MARK MULTIPLE DELIVERED
+// ============================================
+
+const markMessagesDelivered =
+  async (messageIds) => {
+    if (
+      !Array.isArray(
+        messageIds
+      ) ||
+      messageIds.length === 0
+    ) {
+      return [];
+    }
+
+    const validIds =
+      messageIds.filter(
+        (id) =>
+          typeof id ===
+            "string" &&
+          id.trim()
+      );
+
+    if (
+      validIds.length === 0
+    ) {
+      return [];
+    }
+
+    await Message.updateMany(
+      {
+        messageId: {
+          $in: validIds,
+        },
+
+        status: {
+          $in: [
+            "sent",
+            "pending",
+          ],
+        },
+      },
+      {
+        $set: {
+          status: "delivered",
+
+          deliveredAt:
+            new Date(),
+        },
+      }
+    );
+
+    const messages =
+      await Message.find({
+        messageId: {
+          $in: validIds,
+        },
+      }).lean();
+
+    return messages.map(
+      formatMessage
+    );
+  };
+
+// ============================================
+// MARK READ
+// ============================================
+
+const markMessageRead =
+  async ({
+    messageId,
+    userId,
+  }) => {
+    if (!messageId) {
+      return null;
+    }
+
+    if (!isValidObjectId(userId)) {
+      throw new Error(
+        "Invalid user ID"
+      );
+    }
+
+    const message =
+      await Message.findOneAndUpdate(
+        {
+          messageId,
+
+          receiverId: userId,
+
+          status: {
+            $ne: "read",
+          },
+        },
+        {
+          $set: {
+            status: "read",
+
+            readAt:
+              new Date(),
+          },
+        },
+        {
+          new: true,
+        }
+      ).lean();
+
+    return formatMessage(
+      message
+    );
+  };
+
+// ============================================
+// MARK CONVERSATION READ
+// ============================================
+
+const markConversationRead =
+  async ({
+    userId,
+    otherUserId,
+  }) => {
+    if (!isValidObjectId(userId)) {
+      throw new Error(
+        "Invalid user ID"
+      );
+    }
+
+    if (
+      !isValidObjectId(
+        otherUserId
+      )
+    ) {
+      throw new Error(
+        "Invalid other user ID"
+      );
+    }
+
+    const now =
+      new Date();
+
+    await Message.updateMany(
+      {
+        senderId:
+          otherUserId,
+
+        receiverId:
+          userId,
+
+        status: {
+          $in: [
+            "sent",
+            "delivered",
+          ],
+        },
+      },
+      {
+        $set: {
+          status: "read",
+
+          readAt: now,
+        },
+      }
+    );
+
+    return true;
+  };
 
 module.exports = {
-
   saveMessage,
-
   getChatHistory,
-
+  getMessagesAfter,
   getOfflineMessages,
-
   markDelivered,
-
   markMessagesDelivered,
-
   markMessageRead,
-
   markConversationRead,
-
+  formatMessage,
 };

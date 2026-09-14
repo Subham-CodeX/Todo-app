@@ -1,24 +1,67 @@
-import API
-  from "./api";
+import api from "./api";
 
-
-// =====================================
+// ============================================
 // GET CHAT HISTORY
-// =====================================
+// ============================================
 
 export const getChatMessages =
   async (
-    userId
+    userId,
+    options = {}
   ) => {
+    const {
+      limit = 100,
+      before = null,
+      after = null,
+    } = options;
+
+    const params = {
+      limit,
+    };
+
+    if (before) {
+      params.before = before;
+    }
+
+    if (after) {
+      params.after = after;
+    }
 
     const response =
-      await API.get(
-
-        `/messages/${userId}`
-
+      await api.get(
+        `/messages/${userId}`,
+        {
+          params,
+        }
       );
 
+    return (
+      response.data?.messages ||
+      []
+    );
+  };
 
-    return response.data;
+// ============================================
+// SEND MESSAGE THROUGH REST
+// ============================================
 
+export const sendMessageApi =
+  async (
+    userId,
+    {
+      text,
+      clientMessageId,
+    }
+  ) => {
+    const response =
+      await api.post(
+        `/messages/${userId}`,
+        {
+          text,
+
+          clientMessageId,
+        }
+      );
+
+    return response.data?.message;
   };

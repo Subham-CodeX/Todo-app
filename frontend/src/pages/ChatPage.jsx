@@ -11,6 +11,9 @@ import {
   FaComments,
 } from "react-icons/fa";
 
+import {
+  useAuth,
+} from "../context/AuthContext";
 
 import ChatSidebar from
   "../components/chat/ChatSidebar";
@@ -35,11 +38,25 @@ import ChatWindow from
 
 import "../styles/chat.css";
 
+
+// ============================================
+// CHAT PAGE
+// ============================================
+
 export default function ChatPage() {
 
-  // =====================================
+  // ==========================================
+  // AUTHENTICATED USER
+  // ==========================================
+
+  const {
+    user,
+  } = useAuth();
+
+
+  // ==========================================
   // ACTIVE CONNECTION TAB
-  // =====================================
+  // ==========================================
 
   const [
     activeTab,
@@ -49,9 +66,10 @@ export default function ChatPage() {
       "connected"
     );
 
-  // =====================================
+
+  // ==========================================
   // SELECTED CHAT USER
-  // =====================================
+  // ==========================================
 
   const [
     selectedChatUser,
@@ -61,9 +79,10 @@ export default function ChatPage() {
       null
     );
 
-  // =====================================
+
+  // ==========================================
   // CHAT SIDEBAR TABS
-  // =====================================
+  // ==========================================
 
   const tabs = [
 
@@ -124,16 +143,74 @@ export default function ChatPage() {
 
   ];
 
-  // =====================================
+
+  // ==========================================
+  // OPEN CHAT
+  // ==========================================
+
+  const openChat =
+    (
+      selectedUser
+    ) => {
+
+      console.log(
+        "💬 Opening chat with:",
+        selectedUser
+      );
+
+      setSelectedChatUser(
+        selectedUser
+      );
+
+    };
+
+
+  // ==========================================
+  // CLOSE CHAT
+  // ==========================================
+
+  const closeChat =
+    () => {
+
+      setSelectedChatUser(
+        null
+      );
+
+    };
+
+
+  // ==========================================
+  // CHANGE TAB
+  // ==========================================
+
+  const handleTabChange =
+    (
+      tab
+    ) => {
+
+      // Close active conversation
+
+      setSelectedChatUser(
+        null
+      );
+
+      setActiveTab(
+        tab
+      );
+
+    };
+
+
+  // ==========================================
   // RENDER CHAT CONTENT
-  // =====================================
+  // ==========================================
 
   const renderContent =
     () => {
 
-      // ================================
+      // ======================================
       // OPEN REAL CHAT WINDOW
-      // ================================
+      // ======================================
 
       if (
         selectedChatUser
@@ -143,14 +220,28 @@ export default function ChatPage() {
 
           <ChatWindow
 
+            // ================================
+            // CURRENT LOGGED-IN USER
+            // ================================
+
             user={
+              user
+            }
+
+            // ================================
+            // PERSON WE ARE CHATTING WITH
+            // ================================
+
+            selectedUser={
               selectedChatUser
             }
 
-            onBack={() =>
-              setSelectedChatUser(
-                null
-              )
+            // ================================
+            // MOBILE BACK
+            // ================================
+
+            onBack={
+              closeChat
             }
 
           />
@@ -159,17 +250,18 @@ export default function ChatPage() {
 
       }
 
-      // ================================
+
+      // ======================================
       // CONNECTION SYSTEM TABS
-      // ================================
+      // ======================================
 
       switch (
         activeTab
       ) {
 
-        // ------------------------------
+        // ------------------------------------
         // SEARCH PEOPLE
-        // ------------------------------
+        // ------------------------------------
 
         case "search":
 
@@ -177,9 +269,10 @@ export default function ChatPage() {
             <SearchPeople />
           );
 
-        // ------------------------------
+
+        // ------------------------------------
         // INCOMING REQUESTS
-        // ------------------------------
+        // ------------------------------------
 
         case "incoming":
 
@@ -187,9 +280,10 @@ export default function ChatPage() {
             <IncomingRequests />
           );
 
-        // ------------------------------
+
+        // ------------------------------------
         // SENT REQUESTS
-        // ------------------------------
+        // ------------------------------------
 
         case "sent":
 
@@ -197,9 +291,10 @@ export default function ChatPage() {
             <SentRequests />
           );
 
-        // ------------------------------
+
+        // ------------------------------------
         // BLOCKED USERS
-        // ------------------------------
+        // ------------------------------------
 
         case "blocked":
 
@@ -207,9 +302,10 @@ export default function ChatPage() {
             <BlockedUsers />
           );
 
-        // ------------------------------
+
+        // ------------------------------------
         // CONNECTED USERS
-        // ------------------------------
+        // ------------------------------------
 
         case "connected":
 
@@ -220,12 +316,7 @@ export default function ChatPage() {
             <ConnectedUsers
 
               onOpenChat={
-                (
-                  user
-                ) =>
-                  setSelectedChatUser(
-                    user
-                  )
+                openChat
               }
 
             />
@@ -236,6 +327,44 @@ export default function ChatPage() {
 
     };
 
+
+  // ==========================================
+  // AUTH LOADING / USER NOT AVAILABLE
+  // ==========================================
+
+  if (
+    !user
+  ) {
+
+    return (
+
+      <div
+        className="
+          chat-page
+        "
+      >
+
+        <div
+          className="
+            chat-empty-state
+          "
+        >
+
+          Loading user...
+
+        </div>
+
+      </div>
+
+    );
+
+  }
+
+
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
 
     <div
@@ -244,9 +373,9 @@ export default function ChatPage() {
       "
     >
 
-      {/* =================================
+      {/* ====================================
           HEADER
-      ================================= */}
+      ==================================== */}
 
       <div
         className="
@@ -276,9 +405,9 @@ export default function ChatPage() {
       </div>
 
 
-      {/* =================================
+      {/* ====================================
           MAIN CHAT LAYOUT
-      ================================= */}
+      ==================================== */}
 
       <div
         className="
@@ -286,9 +415,9 @@ export default function ChatPage() {
         "
       >
 
-        {/* ===============================
+        {/* ==================================
             CONNECTION SIDEBAR
-        =============================== */}
+        ================================== */}
 
         <ChatSidebar
 
@@ -301,30 +430,15 @@ export default function ChatPage() {
           }
 
           setActiveTab={
-            (
-              tab
-            ) => {
-
-              // Close open chat when
-              // navigating between sections
-
-              setSelectedChatUser(
-                null
-              );
-
-              setActiveTab(
-                tab
-              );
-
-            }
+            handleTabChange
           }
 
         />
 
 
-        {/* ===============================
+        {/* ==================================
             MAIN CONTENT
-        =============================== */}
+        ================================== */}
 
         <div
           className="
