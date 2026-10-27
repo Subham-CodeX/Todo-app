@@ -4317,3 +4317,25 @@
   }
 
 }
+
+.chat-message-status {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.chat-message-status.status-pending,
+.chat-message-status.status-sent,
+.chat-message-status.status-failed {
+  color: currentColor;
+}
+
+.chat-message-status.status-delivered {
+  color: currentColor;
+}
+
+.chat-message-status.status-read {
+  color: #53bdeb;
+}

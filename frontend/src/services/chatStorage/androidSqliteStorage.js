@@ -208,8 +208,9 @@ const normalizeMessage =
       new Date().toISOString();
 
     return {
-      localKey:
-        `${ownerId}:${messageId ?? clientMessageId}`,
+      localKey: `${String(ownerId)}:${
+        clientMessageId ?? messageId
+      }`,
 
       ownerId:
         String(ownerId),

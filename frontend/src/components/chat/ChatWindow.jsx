@@ -104,16 +104,21 @@ const normalizeMessage = (
 // MESSAGE KEY
 // ============================================
 
-const getMessageKey = (
-  message
-) => {
+const getMessageKey = (message) => {
+  const clientId =
+    message?.clientMessageId ??
+    message?.client_message_id;
 
-  return String(
-    message?.messageId ||
-    message?.clientMessageId ||
-    message?.id ||
-    ""
-  );
+  const serverId =
+    message?.messageId ??
+    message?.message_id ??
+    message?.id;
+
+  return clientId
+    ? `client:${clientId}`
+    : serverId
+      ? `server:${serverId}`
+      : null;
 };
 
 
@@ -121,77 +126,35 @@ const getMessageKey = (
 // MERGE MESSAGES
 // ============================================
 
-const mergeMessages = (
-  current,
-  incoming
-) => {
+const mergeMessages = (current, incoming) => {
+  const map = new Map();
 
-  const map =
-    new Map();
+  [...current, ...incoming].forEach((rawMessage) => {
+    const message = normalizeMessage(rawMessage);
+    const key = getMessageKey(message);
 
-  [
-    ...current,
-    ...incoming,
-  ].forEach(
-    (
-      message
-    ) => {
+    if (!key) return;
 
-      const normalized =
-        normalizeMessage(
-          message
-        );
+    const existing = map.get(key);
 
-      const key =
-        getMessageKey(
-          normalized
-        );
-
-      if (!key) {
-        return;
-      }
-
-      const existing =
-        map.get(key);
-
-      // ====================================
-      // SERVER MESSAGE REPLACES PENDING
-      // ====================================
-
-      if (
-        existing &&
-        existing.status === "pending" &&
-        normalized.status !== "pending"
-      ) {
-
-        map.set(
-          key,
-          normalized
-        );
-
-        return;
-      }
-
-      map.set(
-        key,
-        normalized
-      );
+    if (existing) {
+      // Keep the local message's original timestamp
+      // when the server confirms the same message.
+      map.set(key, {
+        ...existing,
+        ...message,
+        createdAt:
+          existing.createdAt || message.createdAt,
+      });
+    } else {
+      map.set(key, message);
     }
-  );
+  });
 
-  return Array.from(
-    map.values()
-  ).sort(
-    (
-      a,
-      b
-    ) =>
-      new Date(
-        a.createdAt
-      ).getTime() -
-      new Date(
-        b.createdAt
-      ).getTime()
+  return Array.from(map.values()).sort(
+    (a, b) =>
+      new Date(a.createdAt).getTime() -
+      new Date(b.createdAt).getTime()
   );
 };
 
@@ -258,6 +221,10 @@ export default function ChatWindow({
 
   const textareaRef =
     useRef(null);
+
+  // Prevent repeated read-receipt requests while React re-renders.
+  const readRequestedRef =
+    useRef(new Set());
 
 
   // ==========================================
@@ -836,6 +803,129 @@ export default function ChatWindow({
 
 
   // ==========================================
+  // MESSAGE READ RECEIPT EVENT
+  // ==========================================
+
+  useEffect(() => {
+    const socket = getSocket();
+
+    if (!socket || !currentUserIdString || !selectedUserIdString) {
+      return;
+    }
+
+    const handleMessageRead = async (rawMessage) => {
+      const normalized = normalizeMessage(rawMessage);
+
+      // A receipt only affects our outgoing message in this conversation.
+      if (
+        normalized.senderId !== currentUserIdString ||
+        normalized.receiverId !== selectedUserIdString ||
+        normalized.status !== "read"
+      ) {
+        return;
+      }
+
+      try {
+        await ChatStorage.saveMessage(
+          currentUserIdString,
+          normalized
+        );
+      } catch (error) {
+        console.error("Failed to save read receipt:", error);
+      }
+
+      setMessages((previous) =>
+        mergeMessages(previous, [normalized])
+      );
+    };
+
+    socket.on("message_read", handleMessageRead);
+
+    return () => {
+      socket.off("message_read", handleMessageRead);
+    };
+  }, [
+    currentUserIdString,
+    selectedUserIdString,
+  ]);
+
+
+  // ==========================================
+  // MARK VISIBLE INCOMING MESSAGES AS READ
+  // ==========================================
+
+  useEffect(() => {
+    const socket = getSocket();
+
+    if (
+      !socket ||
+      !socket.connected ||
+      !currentUserIdString ||
+      !selectedUserIdString
+    ) {
+      return;
+    }
+
+    const unreadMessages = messages.filter((message) => {
+      const normalized = normalizeMessage(message);
+      const isIncoming =
+        normalized.senderId === selectedUserIdString &&
+        normalized.receiverId === currentUserIdString;
+      const messageId = normalized.messageId;
+
+      return (
+        isIncoming &&
+        Boolean(messageId) &&
+        normalized.status !== "read" &&
+        !readRequestedRef.current.has(String(messageId))
+      );
+    });
+
+    unreadMessages.forEach((rawMessage) => {
+      const message = normalizeMessage(rawMessage);
+      const messageId = String(message.messageId);
+
+      // Record before emitting so rapid renders cannot send duplicates.
+      readRequestedRef.current.add(messageId);
+
+      socket.emit(
+        "mark_message_read",
+        { messageId },
+        async (response) => {
+          if (!response?.success || !response.message) {
+            readRequestedRef.current.delete(messageId);
+            return;
+          }
+
+          const readMessage = normalizeMessage(response.message);
+
+          try {
+            await ChatStorage.saveMessage(
+              currentUserIdString,
+              readMessage
+            );
+          } catch (error) {
+            console.error(
+              "Failed to save incoming read status:",
+              error
+            );
+          }
+
+          setMessages((previous) =>
+            mergeMessages(previous, [readMessage])
+          );
+        }
+      );
+    });
+  }, [
+    messages,
+    socketConnected,
+    currentUserIdString,
+    selectedUserIdString,
+  ]);
+
+
+  // ==========================================
   // OFFLINE SERVER MESSAGES
   // ==========================================
 
@@ -1322,12 +1412,27 @@ export default function ChatWindow({
             );
 
 
-            if (
-              response?.success
-            ) {
+            if (response?.success && response.message) {
+              const serverMessage = normalizeMessage(response.message);
 
+              try {
+                await ChatStorage.saveMessage(
+                  currentUserIdString,
+                  serverMessage
+                );
+              } catch (error) {
+                console.error(
+                  "Failed to save socket-confirmed message:",
+                  error
+                );
+              }
+
+              setMessages((previous) =>
+                mergeMessages(previous, [serverMessage])
+              );
+
+              setSending(false);
               return;
-
             }
 
 
@@ -1505,56 +1610,28 @@ export default function ChatWindow({
   // STATUS
   // ==========================================
 
-  const getStatus =
-    (
-      message
-    ) => {
+  const getStatus = (message) => {
+  if (message.senderId !== currentUserIdString) {
+    return null;
+  }
 
-      if (
-        message.senderId !==
-        currentUserIdString
-      ) {
+  switch (message.status) {
+    case "read":
+      return "read";
 
-        return null;
+    case "delivered":
+      return "delivered";
 
-      }
+    case "sent":
+      return "sent";
 
+    case "failed":
+      return "failed";
 
-      if (
-        message.status ===
-          "read" ||
-        message.status ===
-          "delivered"
-      ) {
-
-        return "✓✓";
-
-      }
-
-
-      if (
-        message.status ===
-          "sent"
-      ) {
-
-        return "✓";
-
-      }
-
-
-      if (
-        message.status ===
-          "failed"
-      ) {
-
-        return "!";
-
-      }
-
-
-      return "◷";
-
-    };
+    default:
+      return "pending";
+  }
+};
 
 
   // ==========================================
@@ -1830,21 +1907,24 @@ export default function ChatWindow({
 
 
                       {isMe && (
-
                         <span
-                          className="
-                            chat-message-status
-                          "
+                          className={`chat-message-status status-${getStatus(message)}`}
+                          aria-label={{
+                            pending: "Sending",
+                            sent: "Sent",
+                            delivered: "Delivered",
+                            read: "Read",
+                            failed: "Failed to send",
+                          }[getStatus(message)]}
                         >
-
-                          {
-                            getStatus(
-                              message
-                            )
-                          }
-
+                          {{
+                            pending: "◷",
+                            sent: "✓",
+                            delivered: "✓✓",
+                            read: "✓✓",
+                            failed: "!",
+                          }[getStatus(message)]}
                         </span>
-
                       )}
 
                     </div>

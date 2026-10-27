@@ -542,49 +542,40 @@ const markMessagesDelivered =
 // MARK READ
 // ============================================
 
-const markMessageRead =
-  async ({
-    messageId,
-    userId,
-  }) => {
-    if (!messageId) {
-      return null;
-    }
 
-    if (!isValidObjectId(userId)) {
-      throw new Error(
-        "Invalid user ID"
-      );
-    }
+const markMessageRead = async ({
+  messageId,
+  userId,
+}) => {
+  if (!messageId) {
+    return null;
+  }
 
-    const message =
-      await Message.findOneAndUpdate(
-        {
-          messageId,
+  if (!isValidObjectId(userId)) {
+    throw new Error("Invalid user ID");
+  }
 
-          receiverId: userId,
+  // Only the actual recipient may mark this message as read.
+  const existingMessage = await Message.findOne({
+    messageId: String(messageId),
+    receiverId: userId,
+  });
 
-          status: {
-            $ne: "read",
-          },
-        },
-        {
-          $set: {
-            status: "read",
+  if (!existingMessage) {
+    return null;
+  }
 
-            readAt:
-              new Date(),
-          },
-        },
-        {
-          new: true,
-        }
-      ).lean();
+  // Make repeated read events idempotent.
+  if (existingMessage.status !== "read") {
+    existingMessage.status = "read";
+    existingMessage.readAt = new Date();
 
-    return formatMessage(
-      message
-    );
-  };
+    await existingMessage.save();
+  }
+
+  return formatMessage(existingMessage);
+};
+
 
 // ============================================
 // MARK CONVERSATION READ

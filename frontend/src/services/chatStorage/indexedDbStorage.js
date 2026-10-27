@@ -185,8 +185,9 @@ const normalizeMessage =
       );
 
     return {
-      localKey:
-        `${ownerId}:${messageId ?? clientMessageId}`,
+      localKey: `${String(ownerId)}:${
+        clientMessageId ?? messageId
+      }`,
 
       ownerId:
         String(ownerId),
@@ -286,60 +287,67 @@ const getAllMessages =
 // SAVE MESSAGE
 // ============================================
 
-const saveMessage =
-  async (
-    ownerId,
-    message
-  ) => {
-    const normalized =
-      normalizeMessage(
-        message,
-        ownerId
-      );
+const saveMessage = async (ownerId, message) => {
+  const normalized = normalizeMessage(message, ownerId);
+  const db = await openDatabase();
 
-    const db =
-      await openDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MESSAGE_STORE, "readwrite");
+    const store = tx.objectStore(MESSAGE_STORE);
+    const clientId = normalized.clientMessageId;
 
-    return new Promise(
-      (
-        resolve,
-        reject
-      ) => {
-        const tx =
-          db.transaction(
-            MESSAGE_STORE,
-            "readwrite"
-          );
+    const finish = () => db.close();
 
-        const store =
-          tx.objectStore(
-            MESSAGE_STORE
-          );
+    const putMessage = () => {
+      store.put(normalized);
+    };
 
-        store.put(
-          normalized
+    if (clientId) {
+      const index = store.index("clientMessageId");
+      const request = index.getAll(clientId);
+
+      request.onsuccess = () => {
+        const matches = (request.result || []).filter(
+          (record) =>
+            record.ownerId === String(ownerId)
         );
 
-        tx.oncomplete =
-          () => {
-            db.close();
+        // Remove old records for this same message
+        // when their local keys differ.
+        matches.forEach((record) => {
+          if (record.localKey !== normalized.localKey) {
+            store.delete(record.localKey);
+          }
+        });
 
-            resolve(
-              normalized
-            );
-          };
+        putMessage();
+      };
 
-        tx.onerror =
-          () => {
-            db.close();
+      request.onerror = () => {
+        try {
+          tx.abort();
+        } catch {}
+      };
+    } else {
+      putMessage();
+    }
 
-            reject(
-              tx.error
-            );
-          };
-      }
-    );
-  };
+    tx.oncomplete = () => {
+      finish();
+      resolve(normalized);
+    };
+
+    tx.onerror = () => {
+      finish();
+      reject(tx.error);
+    };
+
+    tx.onabort = () => {
+      finish();
+      reject(tx.error || new Error("Message save aborted"));
+    };
+  });
+};
 
 // ============================================
 // SAVE MANY

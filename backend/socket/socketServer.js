@@ -21,6 +21,7 @@ const {
   getOfflineMessages,
   markMessagesDelivered,
   markDelivered,
+  markMessageRead,
 } =
   require(
     "../services/messageService"
@@ -867,95 +868,54 @@ module.exports =
         // MARK MESSAGE AS READ
         // ======================================
 
-        socket.on(
+        
+        socket.on("mark_message_read", async (payload, callback) => {
+          try {
+            const { messageId } = payload || {};
 
-          "mark_message_read",
-
-          async (
-            payload,
-            callback
-          ) => {
-
-            try {
-
-              const {
-                messageId,
-              } =
-                payload ||
-                {};
-
-
-              if (
-                !messageId
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "Message ID is required",
-
-                });
-
-              }
-
-
-              /*
-               *
-               * The permanent MongoDB
-               * implementation will update
-               * the message here.
-               *
-               * For the current transitional
-               * service, this event is kept
-               * ready for the MongoDB service.
-               *
-               */
-
-
-              callback?.({
-
-                success:
-                  true,
-
-                messageId:
-
-                  messageId,
-
-              });
-
-            }
-
-            catch (
-              error
+            if (
+              typeof messageId !== "string" ||
+              !messageId.trim()
             ) {
-
-              console.error(
-
-                "Mark Message Read Error:",
-
-                error
-
-              );
-
-
-              callback?.({
-
-                success:
-                  false,
-
-                message:
-                  "Failed to mark message as read",
-
+              return callback?.({
+                success: false,
+                message: "Message ID is required",
               });
-
             }
 
-          }
+            // userId comes from the verified socket JWT,
+            // never from the client payload.
+            const readMessage = await markMessageRead({
+              messageId: messageId.trim(),
+              userId,
+            });
 
-        );
+            if (!readMessage) {
+              return callback?.({
+                success: false,
+                message: "Message not found or not authorized",
+              });
+            }
+
+            // Notify every active socket belonging to the sender.
+            io.to(`user:${readMessage.senderId}`).emit(
+              "message_read",
+              readMessage
+            );
+
+            callback?.({
+              success: true,
+              message: readMessage,
+            });
+          } catch (error) {
+            console.error("Mark Message Read Error:", error);
+
+            callback?.({
+              success: false,
+              message: "Failed to mark message as read",
+            });
+          }
+        });
 
 
         // ======================================
