@@ -116,87 +116,83 @@ module.exports = (io) => {
       `👤 User joined room: ${userRoom}`
     );
 
+    
+  // ==========================================
+  // REQUEST OFFLINE MESSAGES
+  // ==========================================
 
-    // ======================================
-    // DELIVER OFFLINE MESSAGES
-    // WITH RECEIVER ACKNOWLEDGEMENT
-    // ======================================
+  socket.on(
+    "request_offline_messages",
+    async (callback) => {
+      try {
+        const offlineMessages =
+          await getOfflineMessages(userId);
 
-    try {
+        if (!offlineMessages.length) {
+          sendCallback(callback, {
+            success: true,
+            messages: [],
+          });
 
-      const offlineMessages =
-        await getOfflineMessages(userId);
-
-      if (
-        Array.isArray(offlineMessages) &&
-        offlineMessages.length > 0
-      ) {
-
-        console.log(
-          `📨 Sending ${offlineMessages.length} offline messages to ${userId}`
-        );
+          return;
+        }
 
         socket.emit(
           "offline_messages",
           offlineMessages,
           async (ack) => {
-
             try {
-
               if (
                 !ack?.success ||
-                !Array.isArray(ack.messageIds) ||
-                ack.messageIds.length === 0
+                !Array.isArray(ack.messageIds)
               ) {
-
-                console.log(
-                  "⚠️ Receiver did not confirm offline messages"
-                );
-
                 return;
               }
 
-              const delivered =
-                await markMessagesDelivered(
-                  ack.messageIds
-                );
+              // Only acknowledge messages addressed
+              // to the authenticated receiving user.
+              const delivered = await markMessagesDelivered(
+                ack.messageIds,
+                userId
+              );
 
-              for (const message of delivered || []) {
-
+              for (const message of delivered) {
                 io.to(`user:${message.senderId}`).emit(
                   "message_delivered",
                   message
                 );
-
               }
 
               console.log(
-                `✅ ${delivered?.length || 0} offline messages confirmed delivered`
+                `✅ Confirmed ${delivered.length} offline messages for ${userId}`
               );
-
             } catch (error) {
-
               console.error(
-                "Offline acknowledgement error:",
+                "Offline delivery acknowledgement failed:",
                 error
               );
-
             }
-
           }
         );
 
+        sendCallback(callback, {
+          success: true,
+          count: offlineMessages.length,
+        });
+
+      } catch (error) {
+        console.error(
+          "Offline message request failed:",
+          error
+        );
+
+        sendCallback(callback, {
+          success: false,
+          message: error.message,
+        });
       }
-
-    } catch (error) {
-
-      console.error(
-        "Offline Message Delivery Error:",
-        error
-      );
-
     }
-
+  );
 
     // ======================================
     // SEND MESSAGE

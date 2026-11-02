@@ -331,32 +331,20 @@ const getMessagesAfter = async ({
   after = null,
   limit = 200,
 }) => {
-  if (!isValidObjectId(userId)) {
-    throw new Error(
-      "Invalid user ID"
-    );
-  }
-
-  if (!isValidObjectId(otherUserId)) {
-    throw new Error(
-      "Invalid user ID"
-    );
-  }
-
-  let safeLimit =
-    Number(limit);
-
   if (
-    !Number.isInteger(safeLimit) ||
-    safeLimit <= 0
+    !isValidObjectId(userId) ||
+    !isValidObjectId(otherUserId)
   ) {
+    throw new Error("Invalid user ID");
+  }
+
+  let safeLimit = Number(limit);
+
+  if (!Number.isInteger(safeLimit) || safeLimit <= 0) {
     safeLimit = 200;
   }
 
-  safeLimit = Math.min(
-    safeLimit,
-    500
-  );
+  safeLimit = Math.min(safeLimit, 500);
 
   const query = {
     $or: [
@@ -371,37 +359,32 @@ const getMessagesAfter = async ({
     ],
   };
 
-  // ==========================================
-  // AFTER CURSOR
-  // ==========================================
-
   if (after) {
-    const afterDate =
-      new Date(after);
+    const afterDate = new Date(after);
 
-    if (
-      !Number.isNaN(
-        afterDate.getTime()
-      )
-    ) {
-      query.createdAt = {
-        $gt: afterDate,
-      };
+    if (Number.isNaN(afterDate.getTime())) {
+      throw new Error("Invalid synchronization date");
     }
+
+    // Re-fetch a small overlapping window.
+    // Local storage must deduplicate by messageId/clientMessageId.
+    query.createdAt = {
+      $gte: new Date(afterDate.getTime() - 5000),
+    };
   }
 
-  const messages =
-    await Message.find(query)
-      .sort({
-        createdAt: 1,
-      })
-      .limit(safeLimit)
-      .lean();
+  const messages = await Message.find(query)
+    .sort({
+      createdAt: 1,
+      _id: 1,
+    })
+    .limit(safeLimit)
+    .lean();
+  messages.reverse();
 
-  return messages.map(
-    formatMessage
-  );
+  return messages.map(formatMessage);
 };
+
 
 // ============================================
 // GET OFFLINE MESSAGES
@@ -438,105 +421,87 @@ const getOfflineMessages =
 // MARK DELIVERED
 // ============================================
 
-const markDelivered =
-  async (messageId) => {
-    if (!messageId) {
-      return null;
+const markDelivered = async (
+  messageId,
+  receiverId
+) => {
+  if (
+    !messageId ||
+    !isValidObjectId(receiverId)
+  ) {
+    return null;
+  }
+
+  const message = await Message.findOneAndUpdate(
+    {
+      messageId: String(messageId),
+      receiverId,
+      status: {
+        $in: ["sent", "pending"],
+      },
+    },
+    {
+      $set: {
+        status: "delivered",
+        deliveredAt: new Date(),
+      },
+    },
+    {
+      new: true,
     }
+  ).lean();
 
-    const message =
-      await Message.findOneAndUpdate(
-        {
-          messageId,
-
-          status: {
-            $in: [
-              "sent",
-              "pending",
-            ],
-          },
-        },
-        {
-          $set: {
-            status: "delivered",
-
-            deliveredAt:
-              new Date(),
-          },
-        },
-        {
-          new: true,
-        }
-      ).lean();
-
-    return formatMessage(
-      message
-    );
-  };
+  return formatMessage(message);
+};
 
 // ============================================
 // MARK MULTIPLE DELIVERED
 // ============================================
 
-const markMessagesDelivered =
-  async (messageIds) => {
-    if (
-      !Array.isArray(
-        messageIds
-      ) ||
-      messageIds.length === 0
-    ) {
-      return [];
-    }
 
-    const validIds =
-      messageIds.filter(
-        (id) =>
-          typeof id ===
-            "string" &&
-          id.trim()
-      );
+const markMessagesDelivered = async (
+  messageIds,
+  receiverId
+) => {
+  if (
+    !Array.isArray(messageIds) ||
+    !messageIds.length ||
+    !isValidObjectId(receiverId)
+  ) {
+    return [];
+  }
 
-    if (
-      validIds.length === 0
-    ) {
-      return [];
-    }
+  const validIds = messageIds.filter(
+    (id) =>
+      typeof id === "string" &&
+      id.trim().length > 0
+  );
 
-    await Message.updateMany(
-      {
-        messageId: {
-          $in: validIds,
-        },
+  if (!validIds.length) return [];
 
-        status: {
-          $in: [
-            "sent",
-            "pending",
-          ],
-        },
+  await Message.updateMany(
+    {
+      messageId: { $in: validIds },
+      receiverId,
+      status: { $in: ["sent", "pending"] },
+    },
+    {
+      $set: {
+        status: "delivered",
+        deliveredAt: new Date(),
       },
-      {
-        $set: {
-          status: "delivered",
+    }
+  );
 
-          deliveredAt:
-            new Date(),
-        },
-      }
-    );
+  const messages = await Message.find({
+    messageId: { $in: validIds },
+    receiverId,
+    status: "delivered",
+  }).lean();
 
-    const messages =
-      await Message.find({
-        messageId: {
-          $in: validIds,
-        },
-      }).lean();
+  return messages.map(formatMessage);
+};
 
-    return messages.map(
-      formatMessage
-    );
-  };
 
 // ============================================
 // MARK READ

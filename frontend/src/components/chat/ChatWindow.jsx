@@ -564,127 +564,66 @@ export default function ChatWindow({
   );
 
 
-  // ==========================================
-  // RECEIVE MESSAGE
-  // ==========================================
+// ==========================================
+// RECEIVE MESSAGE — SAVE ALL CONVERSATIONS
+// ==========================================
 
-  useEffect(
-    () => {
+useEffect(() => {
+  const socket = getSocket();
 
-      const socket =
-        getSocket();
+  if (!socket || !currentUserIdString) return;
 
+  const handleReceive = async (incoming, acknowledge) => {
+    const normalized = normalizeMessage(incoming);
 
-      if (
-        !socket ||
-        !currentUserId ||
-        !selectedUserId
-      ) {
+    // Only accept messages addressed to this logged-in user.
+    if (normalized.receiverId !== currentUserIdString) {
+      return;
+    }
 
-        return;
-
-      }
-
-
-      const handleReceive =
-        async (
-          incoming , acknowledge
-        ) => {
-
-          const normalized =
-            normalizeMessage(
-              incoming
-            );
-
-
-          const isCurrentConversation =
-            (
-              normalized.senderId ===
-                selectedUserIdString &&
-              normalized.receiverId ===
-                currentUserIdString
-            ) ||
-            (
-              normalized.senderId ===
-                currentUserIdString &&
-              normalized.receiverId ===
-                selectedUserIdString
-            );
-
-
-          if (
-            !isCurrentConversation
-          ) {
-
-            return;
-
-          }
-
-
-          try {
-
-            await ChatStorage.saveMessage(
-              currentUserIdString,
-              normalized
-            );
-
-          } catch (
-            error
-          ) {
-
-            console.error(
-              "❌ Failed to save received message:",
-              error
-            );
-
-          }
-
-
-          setMessages(
-            (
-              previous
-            ) =>
-              mergeMessages(
-                previous,
-                [normalized]
-              )
-          );
-
-          acknowledge?.({
-            success: true,
-            messageId: normalized.messageId,
-          });
-
-
-          scrollToBottom();
-
-        };
-
-
-      socket.on(
-        "receive_message",
-        handleReceive
+    try {
+      // IMPORTANT: Save every incoming message, even if its
+      // conversation is not currently open.
+      await ChatStorage.saveMessage(
+        currentUserIdString,
+        normalized
       );
 
+      // Acknowledge only after local persistence succeeds.
+      acknowledge?.({
+        success: true,
+        messageId: normalized.messageId,
+      });
 
-      return () => {
-
-        socket.off(
-          "receive_message",
-          handleReceive
+      // Update the visible chat only if this is the open conversation.
+      if (normalized.senderId === selectedUserIdString) {
+        setMessages((previous) =>
+          mergeMessages(previous, [normalized])
         );
 
-      };
+        scrollToBottom();
+      }
+    } catch (error) {
+      console.error("❌ Failed to persist received message:", error);
 
-    },
-    [
-      currentUserId,
-      selectedUserId,
-      currentUserIdString,
-      selectedUserIdString,
-      scrollToBottom,
-    ]
-  );
+      // Do not acknowledge a message that could not be saved.
+      acknowledge?.({
+        success: false,
+        messageId: normalized.messageId,
+      });
+    }
+  };
+
+  socket.on("receive_message", handleReceive);
+
+  return () => {
+    socket.off("receive_message", handleReceive);
+  };
+}, [
+  currentUserIdString,
+  selectedUserIdString,
+  scrollToBottom,
+]);
 
 
   // ==========================================
@@ -816,35 +755,40 @@ useEffect(() => {
   if (!socket || !currentUserIdString) return;
 
   const handleDelivered = async (rawMessage) => {
-    const normalized = normalizeMessage(rawMessage);
+  const normalized = normalizeMessage(rawMessage);
 
-    if (
-      normalized.senderId !== currentUserIdString ||
-      normalized.status !== "delivered"
-    ) {
-      return;
-    }
+  if (
+    normalized.senderId !== currentUserIdString ||
+    normalized.receiverId !== selectedUserIdString ||
+    normalized.status !== "delivered"
+  ) {
+    return;
+  }
 
-    try {
-      await ChatStorage.saveMessage(
-        currentUserIdString,
-        normalized
-      );
+  try {
+    await ChatStorage.saveMessage(
+      currentUserIdString,
+      normalized
+    );
 
-      setMessages((previous) =>
-        mergeMessages(previous, [normalized])
-      );
-    } catch (error) {
-      console.error("Delivery status update failed:", error);
-    }
-  };
+    setMessages((previous) =>
+      mergeMessages(previous, [normalized])
+    );
+  } catch (error) {
+    console.error(
+      "Delivery status update failed:",
+      error
+    );
+  }
+};
 
   socket.on("message_delivered", handleDelivered);
 
   return () => {
     socket.off("message_delivered", handleDelivered);
   };
-}, [currentUserIdString]);
+}, [currentUserIdString,
+  selectedUserIdString,]);
 
 
   // ==========================================
@@ -970,100 +914,115 @@ useEffect(() => {
   ]);
 
 
-  // ==========================================
-  // OFFLINE SERVER MESSAGES
-  // ==========================================
+// ==========================================
+// OFFLINE SERVER MESSAGES
+// ==========================================
 
-  useEffect(
-    () => {
+useEffect(() => {
+  const socket = getSocket();
 
-      const socket =
-        getSocket();
+  if (!socket || !currentUserIdString) {
+    return;
+  }
 
-
-      if (
-        !socket ||
-        !currentUserId ||
-        !selectedUserId
-      ) {
-
+  const handleOffline = async (offlineMessages, acknowledge) => {
+    try {
+      if (!Array.isArray(offlineMessages)) {
+        acknowledge?.({
+          success: false,
+          messageIds: [],
+        });
         return;
-
       }
 
-
-      const handleOffline = async (offlineMessages, acknowledge) => {
-        try {
-          if (!Array.isArray(offlineMessages)) {
-            acknowledge?.({
-              success: false,
-              messageIds: [],
-            });
-            return;
-          }
-
-          const relevant = offlineMessages.filter((message) => {
-            const normalized = normalizeMessage(message);
-
-            return (
-              normalized.senderId === selectedUserIdString &&
-              normalized.receiverId === currentUserIdString
-            );
-          });
-
-          // Persist every message before acknowledging.
-          await ChatStorage.saveMessages(
-            currentUserIdString,
-            relevant
-          );
-
-          setMessages((previous) =>
-            mergeMessages(previous, relevant)
-          );
-
-          acknowledge?.({
-            success: true,
-            messageIds: relevant
-              .map((message) => normalizeMessage(message).messageId)
-              .filter(Boolean),
-          });
-
-          scrollToBottom();
-        } catch (error) {
-          console.error("Offline message persistence failed:", error);
-
-          acknowledge?.({
-            success: false,
-            messageIds: [],
-          });
-        }
-      };
-
-
-      socket.on(
-        "offline_messages",
-        handleOffline
-      );
-
-
-      return () => {
-
-        socket.off(
-          "offline_messages",
-          handleOffline
+      // Normalize every message received from the server.
+      const normalizedMessages = offlineMessages
+        .map(normalizeMessage)
+        .filter(
+          (message) =>
+            message.receiverId === currentUserIdString &&
+            message.messageId
         );
 
-      };
+      // Save ALL conversations to this device first.
+      await ChatStorage.saveMessages(
+        currentUserIdString,
+        normalizedMessages
+      );
 
-    },
-    [
-      currentUserId,
-      selectedUserId,
-      currentUserIdString,
-      selectedUserIdString,
-      scrollToBottom,
-    ]
-  );
+      // Acknowledge only after every message has been persisted.
+      acknowledge?.({
+        success: true,
+        messageIds: normalizedMessages.map(
+          (message) => message.messageId
+        ),
+      });
+
+      // Display only messages belonging to the open conversation.
+      const relevantMessages = normalizedMessages.filter(
+        (message) =>
+          message.senderId === selectedUserIdString
+      );
+
+      if (relevantMessages.length > 0) {
+        setMessages((previous) =>
+          mergeMessages(previous, relevantMessages)
+        );
+
+        scrollToBottom();
+      }
+
+      console.log(
+        `✅ Persisted ${normalizedMessages.length} offline messages`
+      );
+    } catch (error) {
+      console.error(
+        "❌ Offline message persistence failed:",
+        error
+      );
+
+      acknowledge?.({
+        success: false,
+        messageIds: [],
+      });
+    }
+  };
+
+  socket.on("offline_messages", handleOffline);
+
+    // Request offline messages after the listener is registered.
+  const requestOfflineMessages = () => {
+    if (!socket.connected) return;
+
+    socket.emit(
+      "request_offline_messages",
+      (response) => {
+        console.log(
+          "📥 Offline message request:",
+          response
+        );
+      }
+    );
+  };
+
+  // Handle both cases:
+  // 1. Socket was already connected when ChatWindow opened.
+  // 2. Socket connects or reconnects after ChatWindow opened.
+  socket.on("connect", requestOfflineMessages);
+
+  if (socket.connected) {
+    requestOfflineMessages();
+  }
+
+  return () => {
+    socket.off("offline_messages", handleOffline);
+    socket.off("connect", requestOfflineMessages);
+  };
+}, [
+  currentUserIdString,
+  selectedUserIdString,
+  scrollToBottom,
+]);
 
 
   // ==========================================
