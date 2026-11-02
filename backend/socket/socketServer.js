@@ -1,20 +1,8 @@
-const jwt =
-  require(
-    "jsonwebtoken"
-  );
 
+const jwt = require("jsonwebtoken");
 
-const User =
-  require(
-    "../models/User"
-  );
-
-
-const Connection =
-  require(
-    "../models/Connection"
-  );
-
+const User = require("../models/User");
+const Connection = require("../models/Connection");
 
 const {
   saveMessage,
@@ -22,1061 +10,776 @@ const {
   markMessagesDelivered,
   markDelivered,
   markMessageRead,
-} =
-  require(
-    "../services/messageService"
-  );
+} = require("../services/messageService");
+
+
+// ==========================================
+// CONFIGURATION
+// ==========================================
+
+const DELIVERY_ACK_TIMEOUT = 10000;
+
+
+// ==========================================
+// HELPER: SEND SOCKET ACKNOWLEDGEMENT
+// ==========================================
+
+const sendCallback = (callback, response) => {
+  if (typeof callback === "function") {
+    callback(response);
+  }
+};
 
 
 // ==========================================
 // INITIALIZE SOCKET SERVER
 // ==========================================
 
-module.exports =
-  (
-    io
-  ) => {
+module.exports = (io) => {
 
+  // ========================================
+  // SOCKET AUTHENTICATION
+  // ========================================
 
-    // ======================================
-    // SOCKET AUTHENTICATION
-    // ======================================
+  io.use(async (socket, next) => {
 
-    io.use(
+    try {
 
-      async (
-        socket,
-        next
-      ) => {
+      const token = socket.handshake?.auth?.token;
 
-        try {
-
-          // ----------------------------------
-          // GET JWT TOKEN
-          // ----------------------------------
-
-          const token =
-            socket
-              .handshake
-              ?.auth
-              ?.token;
-
-
-          if (
-            !token
-          ) {
-
-            return next(
-              new Error(
-                "Authentication required"
-              )
-            );
-
-          }
-
-
-          // ----------------------------------
-          // VERIFY JWT
-          // ----------------------------------
-
-          const decoded =
-            jwt.verify(
-
-              token,
-
-              process.env.JWT_SECRET
-
-            );
-
-
-          if (
-            !decoded ||
-            !decoded.id
-          ) {
-
-            return next(
-              new Error(
-                "Invalid authentication token"
-              )
-            );
-
-          }
-
-
-          // ----------------------------------
-          // FIND USER
-          // ----------------------------------
-
-          const user =
-            await User.findById(
-              decoded.id
-            );
-
-
-          if (
-            !user
-          ) {
-
-            return next(
-              new Error(
-                "User not found"
-              )
-            );
-
-          }
-
-
-          // ----------------------------------
-          // ATTACH AUTHENTICATED USER
-          // ----------------------------------
-
-          socket.user =
-            {
-
-              id:
-                user._id.toString(),
-
-              name:
-                user.name,
-
-            };
-
-
-          console.log(
-
-            `🔐 Socket authenticated: ${socket.user.id}`
-
-          );
-
-
-          next();
-
-        }
-
-        catch (
-          error
-        ) {
-
-          console.error(
-
-            "Socket Authentication Error:",
-
-            error.message
-
-          );
-
-
-          return next(
-            new Error(
-              "Invalid authentication token"
-            )
-          );
-
-        }
-
+      if (!token) {
+        return next(new Error("Authentication required"));
       }
 
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET
+      );
+
+      if (!decoded || !decoded.id) {
+        return next(new Error("Invalid authentication token"));
+      }
+
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+        return next(new Error("User not found"));
+      }
+
+      socket.user = {
+        id: user._id.toString(),
+        name: user.name,
+      };
+
+      console.log(
+        `🔐 Socket authenticated: ${socket.user.id}`
+      );
+
+      next();
+
+    } catch (error) {
+
+      console.error(
+        "Socket Authentication Error:",
+        error.message
+      );
+
+      next(new Error("Invalid authentication token"));
+
+    }
+
+  });
+
+
+  // ========================================
+  // SOCKET CONNECTION
+  // ========================================
+
+  io.on("connection", async (socket) => {
+
+    const userId = socket.user.id;
+
+    const userRoom = `user:${userId}`;
+
+    console.log(
+      `🔌 Socket connected: ${userId}`
     );
 
 
     // ======================================
-    // SOCKET CONNECTION
+    // JOIN PERSONAL USER ROOM
     // ======================================
 
-    io.on(
+    socket.join(userRoom);
 
-      "connection",
-
-      async (
-        socket
-      ) => {
-
-        const userId =
-          socket.user.id;
+    console.log(
+      `👤 User joined room: ${userRoom}`
+    );
 
 
-        console.log(
+    // ======================================
+    // DELIVER OFFLINE MESSAGES
+    // WITH RECEIVER ACKNOWLEDGEMENT
+    // ======================================
 
-          `🔌 Socket connected: ${userId}`
+    try {
 
-        );
+      const offlineMessages =
+        await getOfflineMessages(userId);
 
-
-        // ==================================
-        // PERSONAL USER ROOM
-        // ==================================
-
-        const userRoom =
-          `user:${userId}`;
-
-
-        socket.join(
-          userRoom
-        );
-
+      if (
+        Array.isArray(offlineMessages) &&
+        offlineMessages.length > 0
+      ) {
 
         console.log(
-
-          `👤 User joined room: ${userRoom}`
-
+          `📨 Sending ${offlineMessages.length} offline messages to ${userId}`
         );
 
-
-        // ==================================
-        // DELIVER OFFLINE MESSAGES
-        // ==================================
-
-        try {
-
-          const offlineMessages =
-            await getOfflineMessages(
-              userId
-            );
-
-
-          if (
-
-            Array.isArray(
-              offlineMessages
-            ) &&
-
-            offlineMessages.length >
-            0
-
-          ) {
-
-            console.log(
-
-              `📨 Delivering ${offlineMessages.length} offline messages to ${userId}`
-
-            );
-
-
-            // --------------------------------
-            // SEND OFFLINE MESSAGES
-            // --------------------------------
-
-            socket.emit(
-
-              "offline_messages",
-
-              offlineMessages
-
-            );
-
-
-            // --------------------------------
-            // GET MESSAGE IDS
-            // --------------------------------
-
-            const messageIds =
-              offlineMessages
-
-                .map(
-
-                  (
-                    message
-                  ) =>
-
-                    message.messageId ||
-
-                    message.message_id ||
-
-                    message.id
-
-                )
-
-                .filter(
-                  Boolean
-                );
-
-
-            // --------------------------------
-            // MARK DELIVERED
-            // --------------------------------
-
-            if (
-
-              messageIds.length >
-              0
-
-            ) {
-
-              await markMessagesDelivered(
-
-                messageIds
-
-              );
-
-            }
-
-          }
-
-        }
-
-        catch (
-          error
-        ) {
-
-          console.error(
-
-            "Offline Message Delivery Error:",
-
-            error
-
-          );
-
-
-          // Do not disconnect the socket.
-          // The client can synchronize later
-          // through REST API.
-
-        }
-
-
-        // ==================================
-        // SEND MESSAGE
-        // ==================================
-
-        socket.on(
-
-          "send_message",
-
-          async (
-            payload,
-            callback
-          ) => {
+        socket.emit(
+          "offline_messages",
+          offlineMessages,
+          async (ack) => {
 
             try {
 
-              // =================================
-              // VALIDATE PAYLOAD
-              // =================================
-
               if (
-                !payload ||
-                typeof payload !==
-                "object"
+                !ack?.success ||
+                !Array.isArray(ack.messageIds) ||
+                ack.messageIds.length === 0
               ) {
 
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "Invalid message payload",
-
-                });
-
-              }
-
-
-              // =================================
-              // EXTRACT PAYLOAD
-              // =================================
-
-              const {
-                receiverId,
-                message,
-                text,
-                clientMessageId,
-                conversationId,
-              } =
-                payload;
-
-
-              // =================================
-              // NORMALIZE MESSAGE TEXT
-              // =================================
-
-              const messageText =
-                String(
-
-                  message ??
-                  text ??
-                  ""
-
-                )
-                  .trim();
-
-
-              // =================================
-              // VALIDATE RECEIVER
-              // =================================
-
-              if (
-                !receiverId
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "Receiver ID is required",
-
-                });
-
-              }
-
-
-              // =================================
-              // VALIDATE MESSAGE
-              // =================================
-
-              if (
-                !messageText
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "Message cannot be empty",
-
-                });
-
-              }
-
-
-              // =================================
-              // VALIDATE CLIENT MESSAGE ID
-              // =================================
-
-              if (
-                !clientMessageId
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "clientMessageId is required",
-
-                });
-
-              }
-
-
-              const normalizedClientMessageId =
-                String(
-                  clientMessageId
-                ).trim();
-
-
-              if (
-                !normalizedClientMessageId
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "Invalid clientMessageId",
-
-                });
-
-              }
-
-
-              // =================================
-              // PREVENT SELF MESSAGE
-              // =================================
-
-              if (
-                String(
-                  receiverId
-                ) ===
-                String(
-                  userId
-                )
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "You cannot message yourself",
-
-                });
-
-              }
-
-
-              // =================================
-              // CHECK CONNECTION
-              // =================================
-              //
-              // IMPORTANT:
-              //
-              // We intentionally do NOT filter
-              // status = "accepted" here.
-              //
-              // Otherwise a blocked connection
-              // cannot be detected separately.
-              //
-              // =================================
-
-              const connection =
-                await Connection.findOne(
-
-                  {
-
-                    $or:
-                      [
-
-                        {
-
-                          sender:
-                            userId,
-
-                          receiver:
-                            receiverId,
-
-                        },
-
-                        {
-
-                          sender:
-                            receiverId,
-
-                          receiver:
-                            userId,
-
-                        },
-
-                      ],
-
-                  }
-
+                console.log(
+                  "⚠️ Receiver did not confirm offline messages"
                 );
 
-
-              // =================================
-              // NO CONNECTION
-              // =================================
-
-              if (
-                !connection
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "You are not connected with this user",
-
-                });
-
+                return;
               }
 
-
-              // =================================
-              // BLOCKED CONNECTION
-              // =================================
-
-              if (
-                connection.status ===
-                "blocked"
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "Messaging is unavailable",
-
-                });
-
-              }
-
-
-              // =================================
-              // CONNECTION MUST BE ACCEPTED
-              // =================================
-
-              if (
-                connection.status !==
-                "accepted"
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "You can only message an accepted connection",
-
-                });
-
-              }
-
-
-              // =================================
-              // SAVE MESSAGE
-              // =================================
-              //
-              // clientMessageId is extremely
-              // important for offline-first
-              // synchronization.
-              //
-              // The message service must later
-              // persist this value in MongoDB
-              // with a UNIQUE index.
-              //
-              // =================================
-
-              const savedMessage =
-                await saveMessage(
-
-                  {
-
-                    senderId:
-                      userId,
-
-                    receiverId:
-                      receiverId,
-
-                    message:
-                      messageText,
-
-                    text:
-                      messageText,
-
-                    clientMessageId:
-                      normalizedClientMessageId,
-
-                    conversationId:
-                      conversationId ||
-                      null,
-
-                  }
-
+              const delivered =
+                await markMessagesDelivered(
+                  ack.messageIds
                 );
 
+              for (const message of delivered || []) {
 
-              // =================================
-              // SAFETY CHECK
-              // =================================
-
-              if (
-                !savedMessage
-              ) {
-
-                return callback?.({
-
-                  success:
-                    false,
-
-                  message:
-                    "Failed to save message",
-
-                });
+                io.to(`user:${message.senderId}`).emit(
+                  "message_delivered",
+                  message
+                );
 
               }
-
-
-              // =================================
-              // GET MESSAGE ID
-              // =================================
-
-              const savedMessageId =
-
-                savedMessage.messageId ||
-
-                savedMessage.message_id ||
-
-                savedMessage.id;
-
 
               console.log(
-
-                `💾 Message saved: ${savedMessageId}`
-
+                `✅ ${delivered?.length || 0} offline messages confirmed delivered`
               );
 
-
-              console.log(
-
-                `🆔 Client message ID: ${normalizedClientMessageId}`
-
-              );
-
-
-              // =================================
-              // CHECK RECEIVER ONLINE
-              // =================================
-
-              const receiverSockets =
-                await io
-
-                  .in(
-                    `user:${receiverId}`
-                  )
-
-                  .fetchSockets();
-
-
-              const receiverOnline =
-                receiverSockets.length >
-                0;
-
-
-              // =================================
-              // UPDATE DELIVERY STATUS
-              // =================================
-
-              if (
-                receiverOnline
-              ) {
-
-                if (
-                  savedMessageId
-                ) {
-
-                  await markDelivered(
-
-                    savedMessageId
-
-                  );
-
-                }
-
-
-                savedMessage.status =
-                  "delivered";
-
-
-                savedMessage.deliveredAt =
-                  new Date();
-
-
-              }
-
-              else {
-
-                savedMessage.status =
-                  "sent";
-
-              }
-
-
-              // =================================
-              // SEND TO RECEIVER
-              // =================================
-
-              io.to(
-
-                `user:${receiverId}`
-
-              ).emit(
-
-                "receive_message",
-
-                savedMessage
-
-              );
-
-
-              // =================================
-              // SEND TO SENDER
-              // =================================
-              //
-              // This allows the sender's local
-              // pending message to be reconciled
-              // with the server version.
-              //
-              // =================================
-
-              socket.emit(
-
-                "message_sent",
-
-                savedMessage
-
-              );
-
-
-              // =================================
-              // ACKNOWLEDGEMENT
-              // =================================
-
-              callback?.({
-
-                success:
-                  true,
-
-                message:
-                  savedMessage,
-
-              });
-
-
-            }
-
-            catch (
-              error
-            ) {
+            } catch (error) {
 
               console.error(
-
-                "Send Message Error:",
-
+                "Offline acknowledgement error:",
                 error
-
               );
 
-
-              // =================================
-              // SEND FAILURE TO CLIENT
-              // =================================
-
-              callback?.({
-
-                success:
-                  false,
-
-                message:
-                  error.message ||
-                  "Failed to send message",
-
-              });
-
             }
 
           }
-
-        );
-
-
-        // ======================================
-        // MARK MESSAGE AS READ
-        // ======================================
-
-        
-        socket.on("mark_message_read", async (payload, callback) => {
-          try {
-            const { messageId } = payload || {};
-
-            if (
-              typeof messageId !== "string" ||
-              !messageId.trim()
-            ) {
-              return callback?.({
-                success: false,
-                message: "Message ID is required",
-              });
-            }
-
-            // userId comes from the verified socket JWT,
-            // never from the client payload.
-            const readMessage = await markMessageRead({
-              messageId: messageId.trim(),
-              userId,
-            });
-
-            if (!readMessage) {
-              return callback?.({
-                success: false,
-                message: "Message not found or not authorized",
-              });
-            }
-
-            // Notify every active socket belonging to the sender.
-            io.to(`user:${readMessage.senderId}`).emit(
-              "message_read",
-              readMessage
-            );
-
-            callback?.({
-              success: true,
-              message: readMessage,
-            });
-          } catch (error) {
-            console.error("Mark Message Read Error:", error);
-
-            callback?.({
-              success: false,
-              message: "Failed to mark message as read",
-            });
-          }
-        });
-
-
-        // ======================================
-        // TYPING START
-        // ======================================
-
-        socket.on(
-
-          "typing_start",
-
-          (
-            payload
-          ) => {
-
-            const {
-              receiverId,
-            } =
-              payload ||
-              {};
-
-
-            if (
-              !receiverId
-            ) {
-
-              return;
-
-            }
-
-
-            if (
-              String(
-                receiverId
-              ) ===
-              String(
-                userId
-              )
-            ) {
-
-              return;
-
-            }
-
-
-            io.to(
-
-              `user:${receiverId}`
-
-            ).emit(
-
-              "typing_start",
-
-              {
-
-                userId:
-                  userId,
-
-              }
-
-            );
-
-          }
-
-        );
-
-
-        // ======================================
-        // TYPING STOP
-        // ======================================
-
-        socket.on(
-
-          "typing_stop",
-
-          (
-            payload
-          ) => {
-
-            const {
-              receiverId,
-            } =
-              payload ||
-              {};
-
-
-            if (
-              !receiverId
-            ) {
-
-              return;
-
-            }
-
-
-            if (
-              String(
-                receiverId
-              ) ===
-              String(
-                userId
-              )
-            ) {
-
-              return;
-
-            }
-
-
-            io.to(
-
-              `user:${receiverId}`
-
-            ).emit(
-
-              "typing_stop",
-
-              {
-
-                userId:
-                  userId,
-
-              }
-
-            );
-
-          }
-
-        );
-
-
-        // ======================================
-        // DISCONNECT
-        // ======================================
-
-        socket.on(
-
-          "disconnect",
-
-          (
-            reason
-          ) => {
-
-            console.log(
-
-              `🔌 Socket disconnected: ${userId}`
-
-            );
-
-
-            console.log(
-
-              `Disconnect reason: ${reason}`
-
-            );
-
-          }
-
         );
 
       }
 
+    } catch (error) {
+
+      console.error(
+        "Offline Message Delivery Error:",
+        error
+      );
+
+    }
+
+
+    // ======================================
+    // SEND MESSAGE
+    // ======================================
+
+    socket.on(
+      "send_message",
+      async (payload, callback) => {
+
+        try {
+
+          // --------------------------------
+          // VALIDATE PAYLOAD
+          // --------------------------------
+
+          if (
+            !payload ||
+            typeof payload !== "object"
+          ) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "Invalid message payload",
+            });
+
+          }
+
+
+          // --------------------------------
+          // EXTRACT PAYLOAD
+          // --------------------------------
+
+          const {
+            receiverId,
+            message,
+            text,
+            clientMessageId,
+            conversationId,
+          } = payload;
+
+
+          // --------------------------------
+          // NORMALIZE MESSAGE
+          // --------------------------------
+
+          const messageText = String(
+            message ?? text ?? ""
+          ).trim();
+
+
+          // --------------------------------
+          // VALIDATE RECEIVER
+          // --------------------------------
+
+          if (!receiverId) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "Receiver ID is required",
+            });
+
+          }
+
+
+          // --------------------------------
+          // VALIDATE MESSAGE
+          // --------------------------------
+
+          if (!messageText) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "Message cannot be empty",
+            });
+
+          }
+
+
+          // --------------------------------
+          // VALIDATE CLIENT MESSAGE ID
+          // --------------------------------
+
+          if (!clientMessageId) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "clientMessageId is required",
+            });
+
+          }
+
+          const normalizedClientMessageId =
+            String(clientMessageId).trim();
+
+          if (!normalizedClientMessageId) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "Invalid clientMessageId",
+            });
+
+          }
+
+
+          // --------------------------------
+          // PREVENT SELF MESSAGING
+          // --------------------------------
+
+          if (
+            String(receiverId) === String(userId)
+          ) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "You cannot message yourself",
+            });
+
+          }
+
+
+          // =================================
+          // CHECK CONNECTION
+          // =================================
+
+          const connection = await Connection.findOne({
+
+            $or: [
+              {
+                sender: userId,
+                receiver: receiverId,
+              },
+              {
+                sender: receiverId,
+                receiver: userId,
+              },
+            ],
+
+          });
+
+
+          // --------------------------------
+          // NO CONNECTION
+          // --------------------------------
+
+          if (!connection) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "You are not connected with this user",
+            });
+
+          }
+
+
+          // --------------------------------
+          // BLOCKED CONNECTION
+          // --------------------------------
+
+          if (connection.status === "blocked") {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "Messaging is unavailable",
+            });
+
+          }
+
+
+          // --------------------------------
+          // ACCEPTED CONNECTION REQUIRED
+          // --------------------------------
+
+          if (connection.status !== "accepted") {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "You can only message an accepted connection",
+            });
+
+          }
+
+
+          // =================================
+          // SAVE MESSAGE TO MONGODB
+          // =================================
+
+          const savedMessage = await saveMessage({
+
+            senderId: userId,
+
+            receiverId: receiverId,
+
+            message: messageText,
+
+            text: messageText,
+
+            clientMessageId:
+              normalizedClientMessageId,
+
+            conversationId:
+              conversationId || null,
+
+            status: "sent",
+
+            deliveredAt: null,
+
+            readAt: null,
+
+          });
+
+
+          // --------------------------------
+          // SAFETY CHECK
+          // --------------------------------
+
+          if (!savedMessage) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "Failed to save message",
+            });
+
+          }
+
+
+          // =================================
+          // GET MESSAGE ID
+          // =================================
+
+          const savedMessageId =
+            savedMessage.messageId ||
+            savedMessage.message_id ||
+            savedMessage.id ||
+            savedMessage._id?.toString();
+
+          console.log(
+            `💾 Message saved: ${savedMessageId}`
+          );
+
+          console.log(
+            `🆔 Client message ID: ${normalizedClientMessageId}`
+          );
+
+
+          // =================================
+          // CHECK RECEIVER ONLINE
+          // =================================
+
+          const receiverSockets = await io
+            .in(`user:${receiverId}`)
+            .fetchSockets();
+
+          const receiverOnline =
+            receiverSockets.length > 0;
+
+
+          // ==========================================
+          // REAL-TIME DELIVERY
+          // MARK DELIVERED ONLY AFTER ACK
+          // ==========================================
+
+          if (receiverOnline) {
+
+            console.log(
+              `📡 Receiver online: ${receiverId}`
+            );
+
+            // Keep initial status as SENT.
+            // Do not mark delivered before ACK.
+
+            savedMessage.status = "sent";
+
+            savedMessage.deliveredAt = null;
+
+
+            // --------------------------------------
+            // SEND MESSAGE TO ALL RECEIVER DEVICES
+            // --------------------------------------
+
+            io.to(`user:${receiverId}`)
+              .timeout(DELIVERY_ACK_TIMEOUT)
+              .emit(
+                "receive_message",
+                savedMessage,
+                async (error, acknowledgements) => {
+
+                  try {
+
+                    // --------------------------------
+                    // CHECK ACKNOWLEDGEMENT
+                    // --------------------------------
+
+                    if (error) {
+
+                      console.log(
+                        `⏳ Receiver acknowledgement timeout: ${receiverId}`
+                      );
+
+                      return;
+                    }
+
+                    const responses = Array.isArray(
+                      acknowledgements
+                    )
+                      ? acknowledgements
+                      : [acknowledgements];
+
+
+                    // --------------------------------
+                    // AT LEAST ONE DEVICE MUST CONFIRM
+                    // --------------------------------
+
+                    const confirmed = responses.some(
+                      (ack) => ack?.success === true
+                    );
+
+                    if (!confirmed) {
+
+                      console.log(
+                        `⚠️ Message not acknowledged by receiver: ${receiverId}`
+                      );
+
+                      return;
+                    }
+
+
+                    // --------------------------------
+                    // UPDATE DATABASE DELIVERY STATUS
+                    // --------------------------------
+
+                    const deliveredMessage =
+                      await markDelivered(savedMessageId);
+
+                    if (!deliveredMessage) {
+
+                      console.error(
+                        `❌ Could not update delivery status: ${savedMessageId}`
+                      );
+
+                      return;
+                    }
+
+
+                    // --------------------------------
+                    // NOTIFY SENDER
+                    // --------------------------------
+
+                    io.to(`user:${userId}`).emit(
+                      "message_delivered",
+                      deliveredMessage
+                    );
+
+                    console.log(
+                      `✅ Message delivered: ${savedMessageId}`
+                    );
+
+                  } catch (error) {
+
+                    console.error(
+                      "Live delivery acknowledgement error:",
+                      error
+                    );
+
+                  }
+
+                }
+              );
+
+          } else {
+
+            // --------------------------------------
+            // RECEIVER OFFLINE
+            // --------------------------------------
+
+            console.log(
+              `📴 Receiver offline: ${receiverId}`
+            );
+
+            // Message is already stored in MongoDB.
+            // It will be delivered after reconnection.
+
+            savedMessage.status = "sent";
+
+          }
+
+
+          // =================================
+          // NOTIFY SENDER
+          // =================================
+
+          socket.emit(
+            "message_sent",
+            savedMessage
+          );
+
+
+          // =================================
+          // SEND ACKNOWLEDGEMENT TO SENDER
+          // =================================
+
+          sendCallback(callback, {
+            success: true,
+            message: savedMessage,
+          });
+
+
+        } catch (error) {
+
+          console.error(
+            "Send Message Error:",
+            error
+          );
+
+          sendCallback(callback, {
+            success: false,
+            message:
+              error.message || "Failed to send message",
+          });
+
+        }
+
+      }
     );
 
-  };
+
+    // ======================================
+    // MARK MESSAGE AS READ
+    // ======================================
+
+    socket.on(
+      "mark_message_read",
+      async (payload, callback) => {
+
+        try {
+
+          const { messageId } = payload || {};
+
+          if (
+            typeof messageId !== "string" ||
+            !messageId.trim()
+          ) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "Message ID is required",
+            });
+
+          }
+
+
+          // User ID comes from authenticated JWT.
+
+          const readMessage = await markMessageRead({
+
+            messageId: messageId.trim(),
+
+            userId,
+
+          });
+
+
+          if (!readMessage) {
+
+            return sendCallback(callback, {
+              success: false,
+              message: "Message not found or not authorized",
+            });
+
+          }
+
+
+          // --------------------------------
+          // NOTIFY SENDER
+          // --------------------------------
+
+          io.to(`user:${readMessage.senderId}`).emit(
+            "message_read",
+            readMessage
+          );
+
+
+          // --------------------------------
+          // ACKNOWLEDGEMENT
+          // --------------------------------
+
+          sendCallback(callback, {
+            success: true,
+            message: readMessage,
+          });
+
+        } catch (error) {
+
+          console.error(
+            "Mark Message Read Error:",
+            error
+          );
+
+          sendCallback(callback, {
+            success: false,
+            message: "Failed to mark message as read",
+          });
+
+        }
+
+      }
+    );
+
+
+    // ======================================
+    // TYPING START
+    // ======================================
+
+    socket.on(
+      "typing_start",
+      (payload) => {
+
+        const { receiverId } = payload || {};
+
+        if (
+          !receiverId ||
+          String(receiverId) === String(userId)
+        ) {
+          return;
+        }
+
+        io.to(`user:${receiverId}`).emit(
+          "typing_start",
+          {
+            userId,
+          }
+        );
+
+      }
+    );
+
+
+    // ======================================
+    // TYPING STOP
+    // ======================================
+
+    socket.on(
+      "typing_stop",
+      (payload) => {
+
+        const { receiverId } = payload || {};
+
+        if (
+          !receiverId ||
+          String(receiverId) === String(userId)
+        ) {
+          return;
+        }
+
+        io.to(`user:${receiverId}`).emit(
+          "typing_stop",
+          {
+            userId,
+          }
+        );
+
+      }
+    );
+
+
+    // ======================================
+    // DISCONNECT
+    // ======================================
+
+    socket.on(
+      "disconnect",
+      (reason) => {
+
+        console.log(
+          `🔌 Socket disconnected: ${userId}`
+        );
+
+        console.log(
+          `Disconnect reason: ${reason}`
+        );
+
+      }
+    );
+
+  });
+
+};

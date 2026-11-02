@@ -82,74 +82,51 @@ export const createLocalMessage =
 // SYNC ONE CONVERSATION
 // ============================================
 
-export const syncConversation =
-  async ({
-    ownerId,
-    otherUserId,
-  }) => {
-    const lastSync =
-      await ChatStorage.getLastSync(
-        ownerId,
-        otherUserId
-      );
+export const syncConversation = async ({
+  ownerId,
+  otherUserId,
+}) => {
+  try {
+    const lastSync = await ChatStorage.getLastSync(
+      ownerId,
+      otherUserId
+    );
 
     let messages = [];
 
-    // ========================================
-    // FIRST SYNC
-    // ========================================
-
     if (!lastSync) {
-      messages =
-        await getChatMessages(
-          otherUserId,
-          {
-            limit: 100,
-          }
-        );
+      // First sync: get the latest 100 messages.
+      messages = await getChatMessages(otherUserId, {
+        limit: 100,
+      });
+    } else {
+      // Re-fetch a small overlapping window.
+      // Local storage removes duplicate messages.
+      const overlapDate = new Date(
+        new Date(lastSync).getTime() - 5000
+      ).toISOString();
+
+      messages = await getChatMessages(otherUserId, {
+        after: overlapDate,
+        limit: 200,
+      });
     }
 
-    // ========================================
-    // INCREMENTAL SYNC
-    // ========================================
-
-    else {
-      messages =
-        await getChatMessages(
-          otherUserId,
-          {
-            after:
-              lastSync,
-
-            limit: 200,
-          }
-        );
+    if (!Array.isArray(messages)) {
+      throw new Error("Invalid server message response");
     }
 
-    // ========================================
-    // SAVE SERVER MESSAGES
-    // ========================================
-
-    if (
-      messages.length > 0
-    ) {
+    if (messages.length > 0) {
+      // Save server messages into platform-specific storage.
       await ChatStorage.saveMessages(
         ownerId,
         messages
       );
 
-      // ======================================
-      // UPDATE CURSOR
-      // ======================================
-
-      const latest =
-        messages[
-          messages.length - 1
-        ];
+      const latest = messages[messages.length - 1];
 
       const latestDate =
-        latest.createdAt ??
-        latest.created_at;
+        latest.createdAt ?? latest.created_at;
 
       if (latestDate) {
         await ChatStorage.setLastSync(
@@ -160,20 +137,12 @@ export const syncConversation =
       }
     }
 
-    // ========================================
-    // FIRST EMPTY SYNC
-    // ========================================
-
-    else if (!lastSync) {
-      await ChatStorage.setLastSync(
-        ownerId,
-        otherUserId,
-        new Date().toISOString()
-      );
-    }
-
     return messages;
-  };
+  } catch (error) {
+    console.error("Conversation synchronization failed:", error);
+    throw error;
+  }
+};
 
 // ============================================
 // SEND ONE PENDING MESSAGE
