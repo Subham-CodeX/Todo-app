@@ -449,119 +449,84 @@ export default function ChatWindow({
   );
 
 
-  // ==========================================
-  // SERVER SYNC
-  // ==========================================
+// ==========================================
+// SERVER SYNC — WEBSITE / ANDROID
+// ==========================================
 
-  useEffect(
-    () => {
+useEffect(() => {
+  let cancelled = false;
 
-      let cancelled =
-        false;
+  const synchronize = async () => {
+    if (!currentUserIdString || !selectedUserIdString) {
+      return;
+    }
 
+    if (!navigator.onLine) {
+      return;
+    }
 
-      const synchronize =
-        async () => {
+    setSyncing(true);
 
-          if (
-            !currentUserId ||
-            !selectedUserId
-          ) {
+    try {
+      // Initialize local storage before synchronizing.
+      await ChatStorage.initialize();
 
-            return;
+      console.log("🔄 Starting conversation synchronization", {
+        currentUserId: currentUserIdString,
+        otherUserId: selectedUserIdString,
+      });
 
-          }
+      // Fetch server messages regardless of the other user's status.
+      const result = await syncChat({
+        ownerId: currentUserIdString,
+        otherUserId: selectedUserIdString,
+      });
 
+      if (cancelled) return;
 
-          if (
-            !navigator.onLine
-          ) {
+      console.log(
+        "📥 Server synchronization result:",
+        result
+      );
 
-            return;
+      // Reload the complete local conversation after syncing.
+      const localMessages = await ChatStorage.getMessages(
+        currentUserIdString,
+        selectedUserIdString
+      );
 
-          }
+      if (cancelled) return;
 
+      // Merge rather than replace, preserving any live messages
+      // received while synchronization was running.
+      setMessages((previous) =>
+        mergeMessages(previous, localMessages)
+      );
 
-          setSyncing(true);
+      console.log(
+        `✅ Loaded ${localMessages.length} local conversation messages`
+      );
+    } catch (error) {
+      console.error(
+        "❌ Conversation synchronization failed:",
+        error
+      );
+    } finally {
+      if (!cancelled) {
+        setSyncing(false);
+      }
+    }
+  };
 
+  synchronize();
 
-          try {
-
-            const result =
-              await syncChat({
-                ownerId:
-                  currentUserId,
-
-                otherUserId:
-                  selectedUserId,
-              });
-
-
-            if (
-              cancelled
-            ) {
-
-              return;
-
-            }
-
-
-            if (
-              result?.messages?.length
-            ) {
-
-              setMessages(
-                (
-                  previous
-                ) =>
-                  mergeMessages(
-                    previous,
-                    result.messages
-                  )
-              );
-
-            }
-
-          } catch (
-            error
-          ) {
-
-            console.error(
-              "❌ Chat synchronization failed:",
-              error
-            );
-
-          } finally {
-
-            if (
-              !cancelled
-            ) {
-
-              setSyncing(false);
-
-            }
-
-          }
-
-        };
-
-
-      synchronize();
-
-
-      return () => {
-
-        cancelled =
-          true;
-
-      };
-
-    },
-    [
-      currentUserId,
-      selectedUserId,
-    ]
-  );
+  return () => {
+    cancelled = true;
+  };
+}, [
+  currentUserIdString,
+  selectedUserIdString,
+]);
 
 
 // ==========================================

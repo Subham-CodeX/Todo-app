@@ -375,8 +375,8 @@ const getMessagesAfter = async ({
 
   const messages = await Message.find(query)
     .sort({
-      createdAt: 1,
-      _id: 1,
+      createdAt: -1,
+      _id: -1,
     })
     .limit(safeLimit)
     .lean();
