@@ -171,16 +171,26 @@ const saveMessage = async ({
   // IDEMPOTENCY
   // ==========================================
 
-  const existingMessage =
-    await Message.findOne({
-      clientMessageId:
-        finalClientMessageId,
-    });
+  const existingMessage = await Message.findOne({
+  clientMessageId: finalClientMessageId,
+  });
 
   if (existingMessage) {
-    return formatMessage(
-      existingMessage
-    );
+    const sameSender =
+      String(existingMessage.senderId) ===
+      String(senderId);
+
+    const sameReceiver =
+      String(existingMessage.receiverId) ===
+      String(receiverId);
+
+    if (!sameSender || !sameReceiver) {
+      throw new Error(
+        "Message ID conflict: ownership mismatch"
+      );
+    }
+
+    return formatMessage(existingMessage);
   }
 
   // ==========================================
@@ -207,28 +217,34 @@ const saveMessage = async ({
   try {
     await messageDocument.save();
   } catch (error) {
-    // ========================================
-    // DUPLICATE RETRY
-    // ========================================
-
-    if (
-      error?.code === 11000
-    ) {
-      const duplicate =
-        await Message.findOne({
-          clientMessageId:
-            finalClientMessageId,
+      if (error?.code === 11000) {
+        const duplicate = await Message.findOne({
+          clientMessageId: finalClientMessageId,
         });
 
-      if (duplicate) {
-        return formatMessage(
-          duplicate
-        );
-      }
-    }
+        if (!duplicate) {
+          throw error;
+        }
 
-    throw error;
-  }
+        const sameSender =
+          String(duplicate.senderId) ===
+          String(senderId);
+
+        const sameReceiver =
+          String(duplicate.receiverId) ===
+          String(receiverId);
+
+        if (!sameSender || !sameReceiver) {
+          throw new Error(
+            "Message ID conflict: ownership mismatch"
+          );
+        }
+
+        return formatMessage(duplicate);
+      }
+
+      throw error;
+    }
 
   return formatMessage(
     messageDocument
@@ -304,6 +320,7 @@ const getChatHistory = async ({
     await Message.find(query)
       .sort({
         createdAt: -1,
+        _id: -1,
       })
       .limit(safeLimit)
       .lean();
@@ -328,7 +345,8 @@ const getChatHistory = async ({
 const getMessagesAfter = async ({
   userId,
   otherUserId,
-  after = null,
+  afterCreatedAt,
+  afterId,
   limit = 200,
 }) => {
   if (
@@ -340,13 +358,16 @@ const getMessagesAfter = async ({
 
   let safeLimit = Number(limit);
 
-  if (!Number.isInteger(safeLimit) || safeLimit <= 0) {
+  if (
+    !Number.isInteger(safeLimit) ||
+    safeLimit <= 0
+  ) {
     safeLimit = 200;
   }
 
   safeLimit = Math.min(safeLimit, 500);
 
-  const query = {
+  const conversationFilter = {
     $or: [
       {
         senderId: userId,
@@ -359,31 +380,55 @@ const getMessagesAfter = async ({
     ],
   };
 
-  if (after) {
-    const afterDate = new Date(after);
+  const filters = [conversationFilter];
+
+  // Compound cursor: createdAt + MongoDB _id.
+  if (afterCreatedAt || afterId) {
+    if (
+      !afterCreatedAt ||
+      !afterId ||
+      !mongoose.Types.ObjectId.isValid(afterId)
+    ) {
+      throw new Error("Invalid synchronization cursor");
+    }
+
+    const afterDate = new Date(afterCreatedAt);
 
     if (Number.isNaN(afterDate.getTime())) {
       throw new Error("Invalid synchronization date");
     }
 
-    // Re-fetch a small overlapping window.
-    // Local storage must deduplicate by messageId/clientMessageId.
-    query.createdAt = {
-      $gte: new Date(afterDate.getTime() - 5000),
-    };
+    filters.push({
+      $or: [
+        {
+          createdAt: {
+            $gt: afterDate,
+          },
+        },
+        {
+          createdAt: afterDate,
+          _id: {
+            $gt: new mongoose.Types.ObjectId(afterId),
+          },
+        },
+      ],
+    });
   }
 
-  const messages = await Message.find(query)
+  const messages = await Message.find({
+    $and: filters,
+  })
     .sort({
-      createdAt: -1,
-      _id: -1,
+      createdAt: 1,
+      _id: 1,
     })
     .limit(safeLimit)
     .lean();
-  messages.reverse();
 
   return messages.map(formatMessage);
 };
+
+
 
 
 // ============================================

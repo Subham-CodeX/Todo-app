@@ -4,7 +4,7 @@ const {
   getChatHistory,
   getMessagesAfter,
   saveMessage,
-  markConversationRead,
+  // markConversationRead,
 } = require("../services/messageService");
 
 const Connection =
@@ -123,38 +123,42 @@ exports.getMessages = async (
     // SYNC MODE
     // ========================================
 
-    if (req.query.after) {
-      const messages =
-        await getMessagesAfter({
-          userId,
-          otherUserId,
+    
+  const hasCompoundCursor =
+    req.query.afterCreatedAt ||
+    req.query.afterId;
 
-          after:
-            req.query.after,
+  if (hasCompoundCursor) {
+    const messages = await getMessagesAfter({
+      userId,
+      otherUserId,
 
-          limit:
-            req.query.limit ||
-            200,
-        });
+      afterCreatedAt:
+        req.query.afterCreatedAt,
 
-      return res.status(200).json({
-        success: true,
+      afterId:
+        req.query.afterId,
 
-        messages,
+      limit:
+        req.query.limit || 200,
+    });
 
-        sync: true,
+    const safeLimit = Math.min(
+      Math.max(
+        Number(req.query.limit) || 200,
+        1
+      ),
+      500
+    );
 
-        hasMore:
-          messages.length >=
-          Math.min(
-            Number(
-              req.query.limit ||
-                200
-            ),
-            500
-          ),
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      messages,
+      sync: true,
+      hasMore: messages.length === safeLimit,
+    });
+  }
+
 
     // ========================================
     // NORMAL HISTORY MODE
@@ -182,10 +186,10 @@ exports.getMessages = async (
     // MARK READ
     // ========================================
 
-    await markConversationRead({
-      userId,
-      otherUserId,
-    });
+    // await markConversationRead({
+    //   userId,
+    //   otherUserId,
+    // });
 
     return res.status(200).json({
       success: true,
@@ -210,16 +214,19 @@ exports.getMessages = async (
     });
 
   } catch (error) {
-    console.error(
-      "Get Messages Error:",
-      error
-    );
+    console.error("Get Messages Error:", error);
 
-    return res.status(403).json({
+    return res.status(
+      error.message.includes("Invalid")
+        ? 400
+        : error.message.includes("not connected") ||
+          error.message.includes("accepted connections")
+        ? 403
+        : 500
+    ).json({
       success: false,
       message:
-        error.message ||
-        "Failed to load messages",
+        error.message || "Failed to load messages",
     });
   }
 };

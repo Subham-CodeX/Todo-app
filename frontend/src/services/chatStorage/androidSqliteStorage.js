@@ -167,90 +167,91 @@ const createConversationKey =
 // NORMALIZE
 // ============================================
 
-const normalizeMessage =
-  (
-    message,
-    ownerId
-  ) => {
-    const senderId =
-      String(
-        message.senderId ??
-          message.sender_id ??
-          ""
-      );
+const normalizeMessage = (message, ownerId) => {
+  const senderId = String(
+    message.senderId ??
+    message.sender_id ??
+    ""
+  );
 
-    const receiverId =
-      String(
-        message.receiverId ??
-          message.receiver_id ??
-          ""
-      );
+  const receiverId = String(
+    message.receiverId ??
+    message.receiver_id ??
+    ""
+  );
 
-    const messageId =
-      message.messageId ??
-      message.message_id ??
-      message.id ??
-      null;
+  const messageId =
+    message.messageId ??
+    message.message_id ??
+    message.id ??
+    null;
 
-    const clientMessageId =
-      message.clientMessageId ??
-      message.client_message_id ??
-      crypto.randomUUID();
+  const clientMessageId =
+    message.clientMessageId ??
+    message.client_message_id ??
+    message.clientMessageId ??
+    null;
 
-    const text =
-      message.text ??
-      message.message ??
-      "";
+  // Never generate a new random ID for server history.
+  const stableId =
+    clientMessageId ||
+    messageId;
 
-    const createdAt =
-      message.createdAt ??
-      message.created_at ??
-      new Date().toISOString();
+  if (!stableId) {
+    throw new Error(
+      "Message requires clientMessageId or messageId"
+    );
+  }
 
-    return {
-      localKey: `${String(ownerId)}:${
-        clientMessageId ?? messageId
-      }`,
+  const text =
+    message.text ??
+    message.message ??
+    "";
 
-      ownerId:
-        String(ownerId),
+  const createdAt =
+    message.createdAt ??
+    message.created_at ??
+    new Date().toISOString();
 
-      messageId,
+  const conversationKey =
+    createConversationKey(
+      ownerId,
+      senderId === String(ownerId)
+        ? receiverId
+        : senderId
+    );
 
-      clientMessageId,
+  return {
+    localKey: `${String(ownerId)}:${stableId}`,
 
-      senderId,
+    ownerId: String(ownerId),
 
-      receiverId,
+    messageId,
 
-      text,
+    clientMessageId: clientMessageId || null,
 
-      status:
-        message.status ||
-        "sent",
+    senderId,
+    receiverId,
 
-      createdAt,
+    text,
 
-      deliveredAt:
-        message.deliveredAt ??
-        message.delivered_at ??
-        null,
+    status: message.status || "sent",
 
-      readAt:
-        message.readAt ??
-        message.read_at ??
-        null,
+    createdAt,
 
-      conversationKey:
-        createConversationKey(
-          ownerId,
-          senderId ===
-            String(ownerId)
-            ? receiverId
-            : senderId
-        ),
-    };
+    deliveredAt:
+      message.deliveredAt ??
+      message.delivered_at ??
+      null,
+
+    readAt:
+      message.readAt ??
+      message.read_at ??
+      null,
+
+    conversationKey,
   };
+};
 
 // ============================================
 // SAVE MESSAGE
@@ -300,16 +301,52 @@ const saveMessage =
         ?,
         ?
       )
+      
       ON CONFLICT(local_key)
       DO UPDATE SET
-        message_id = excluded.message_id,
+        message_id = COALESCE(
+          excluded.message_id,
+          messages.message_id
+        ),
+
         client_message_id = excluded.client_message_id,
+
         text = excluded.text,
-        status = excluded.status,
-        created_at = excluded.created_at,
-        delivered_at = excluded.delivered_at,
-        read_at = excluded.read_at,
-        conversation_key = excluded.conversation_key
+
+        status = CASE
+          WHEN messages.status = 'read'
+            OR excluded.status = 'read'
+            THEN 'read'
+
+          WHEN messages.status = 'delivered'
+            OR excluded.status = 'delivered'
+            THEN 'delivered'
+
+          WHEN messages.status = 'sent'
+            OR excluded.status = 'sent'
+            THEN 'sent'
+
+          ELSE excluded.status
+        END,
+
+        created_at = messages.created_at,
+
+        delivered_at = COALESCE(
+          excluded.delivered_at,
+          messages.delivered_at
+        ),
+
+        read_at = COALESCE(
+          excluded.read_at,
+          messages.read_at
+        ),
+
+        conversation_key = excluded.conversation_key,
+
+        receiver_id = excluded.receiver_id,
+
+        sender_id = excluded.sender_id
+
       `,
       [
         normalized.localKey,
@@ -393,18 +430,52 @@ const saveMessages =
             ?,
             ?
           )
+         
           ON CONFLICT(local_key)
           DO UPDATE SET
-            message_id = excluded.message_id,
+            message_id = COALESCE(
+              excluded.message_id,
+              messages.message_id
+            ),
+
             client_message_id = excluded.client_message_id,
+
             text = excluded.text,
-            status = excluded.status,
-            created_at = excluded.created_at,
-            delivered_at = excluded.delivered_at,
-            read_at = excluded.read_at,
+
+            status = CASE
+              WHEN messages.status = 'read'
+                OR excluded.status = 'read'
+                THEN 'read'
+
+              WHEN messages.status = 'delivered'
+                OR excluded.status = 'delivered'
+                THEN 'delivered'
+
+              WHEN messages.status = 'sent'
+                OR excluded.status = 'sent'
+                THEN 'sent'
+
+              ELSE excluded.status
+            END,
+
+            created_at = messages.created_at,
+
+            delivered_at = COALESCE(
+              excluded.delivered_at,
+              messages.delivered_at
+            ),
+
+            read_at = COALESCE(
+              excluded.read_at,
+              messages.read_at
+            ),
+
             conversation_key = excluded.conversation_key,
+
             receiver_id = excluded.receiver_id,
+
             sender_id = excluded.sender_id
+
           `,
           [
             normalized.localKey,
@@ -779,6 +850,29 @@ const mapRow =
       row.conversation_key,
   });
 
+  const statusPriority = {
+  pending: 0,
+  failed: 0,
+  sent: 1,
+  delivered: 2,
+  read: 3,
+};
+
+const mergeMessageStatus = (
+  existingStatus,
+  incomingStatus
+) => {
+  const existing =
+    statusPriority[existingStatus] ?? 0;
+
+  const incoming =
+    statusPriority[incomingStatus] ?? 0;
+
+  return incoming > existing
+    ? incomingStatus
+    : existingStatus;
+};
+
 export {
   initializeDatabase,
   saveMessage,
@@ -792,4 +886,5 @@ export {
   setLastSync,
   clearUser,
   createConversationKey,
+  mergeMessageStatus,
 };

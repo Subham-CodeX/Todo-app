@@ -82,67 +82,161 @@ export const createLocalMessage =
 // SYNC ONE CONVERSATION
 // ============================================
 
+
+const SYNC_BATCH_SIZE = 200;
+
+// ============================================
+// PARSE STORED CURSOR
+// ============================================
+
+const parseSyncCursor = (value) => {
+  if (!value) return null;
+
+  try {
+    const cursor = JSON.parse(value);
+
+    if (
+      cursor?.createdAt &&
+      cursor?.id
+    ) {
+      return cursor;
+    }
+  } catch {
+    // Legacy timestamp-only cursor.
+  }
+
+  // Reset legacy cursor safely.
+  // A first sync fetches the latest 100 messages.
+  return null;
+};
+
+// ============================================
+// SYNC ONE CONVERSATION
+// ============================================
+
 export const syncConversation = async ({
   ownerId,
   otherUserId,
 }) => {
   try {
-    const lastSync = await ChatStorage.getLastSync(
+    let storedCursor = await ChatStorage.getLastSync(
       ownerId,
       otherUserId
     );
 
-    let messages = [];
+    let cursor = parseSyncCursor(storedCursor);
 
-    if (!lastSync) {
-      // First sync: get the latest 100 messages.
-      messages = await getChatMessages(otherUserId, {
-        limit: 100,
-      });
-    } else {
-      // Re-fetch a small overlapping window.
-      // Local storage removes duplicate messages.
-      const overlapDate = new Date(
-        new Date(lastSync).getTime() - 5000
-      ).toISOString();
+    let allMessages = [];
 
-      messages = await getChatMessages(otherUserId, {
-        after: overlapDate,
-        limit: 200,
-      });
+    // First synchronization.
+    if (!cursor) {
+      const messages = await getChatMessages(
+        otherUserId,
+        {
+          limit: 100,
+        }
+      );
+
+      if (messages.length > 0) {
+        await ChatStorage.saveMessages(
+          ownerId,
+          messages
+        );
+
+        const latest = messages[messages.length - 1];
+
+        const createdAt =
+          latest.createdAt ??
+          latest.created_at;
+
+        const id = latest.id;
+
+        if (createdAt && id) {
+          cursor = {
+            createdAt,
+            id,
+          };
+
+          await ChatStorage.setLastSync(
+            ownerId,
+            otherUserId,
+            JSON.stringify(cursor)
+          );
+        }
+
+        allMessages.push(...messages);
+      }
+
+      return allMessages;
     }
 
-    if (!Array.isArray(messages)) {
-      throw new Error("Invalid server message response");
-    }
+    // Incremental synchronization.
+    while (true) {
+      const messages = await getChatMessages(
+        otherUserId,
+        {
+          limit: SYNC_BATCH_SIZE,
+          afterCreatedAt: cursor.createdAt,
+          afterId: cursor.id,
+        }
+      );
 
-    if (messages.length > 0) {
-      // Save server messages into platform-specific storage.
+      if (!messages.length) {
+        break;
+      }
+
       await ChatStorage.saveMessages(
         ownerId,
         messages
       );
 
+      allMessages.push(...messages);
+
       const latest = messages[messages.length - 1];
 
-      const latestDate =
-        latest.createdAt ?? latest.created_at;
+      const createdAt =
+        latest.createdAt ??
+        latest.created_at;
 
-      if (latestDate) {
-        await ChatStorage.setLastSync(
-          ownerId,
-          otherUserId,
-          latestDate
+      const id = latest.id;
+
+      if (!createdAt || !id) {
+        throw new Error(
+          "Server message is missing synchronization cursor fields"
         );
+      }
+
+      const nextCursor = {
+        createdAt,
+        id,
+      };
+
+      // Move cursor forward only after persistence succeeds.
+      cursor = nextCursor;
+
+      await ChatStorage.setLastSync(
+        ownerId,
+        otherUserId,
+        JSON.stringify(cursor)
+      );
+
+      if (messages.length < SYNC_BATCH_SIZE) {
+        break;
       }
     }
 
-    return messages;
+    return allMessages;
+
   } catch (error) {
-    console.error("Conversation synchronization failed:", error);
+    console.error(
+      "Conversation synchronization failed:",
+      error
+    );
+
     throw error;
   }
 };
+
 
 // ============================================
 // SEND ONE PENDING MESSAGE

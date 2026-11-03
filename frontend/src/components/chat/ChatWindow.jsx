@@ -126,6 +126,15 @@ const getMessageKey = (message) => {
 // MERGE MESSAGES
 // ============================================
 
+
+const statusPriority = {
+  pending: 0,
+  failed: 0,
+  sent: 1,
+  delivered: 2,
+  read: 3,
+};
+
 const mergeMessages = (current, incoming) => {
   const map = new Map();
 
@@ -137,18 +146,37 @@ const mergeMessages = (current, incoming) => {
 
     const existing = map.get(key);
 
-    if (existing) {
-      // Keep the local message's original timestamp
-      // when the server confirms the same message.
-      map.set(key, {
-        ...existing,
-        ...message,
-        createdAt:
-          existing.createdAt || message.createdAt,
-      });
-    } else {
+    if (!existing) {
       map.set(key, message);
+      return;
     }
+
+    const existingPriority =
+      statusPriority[existing.status] ?? 0;
+
+    const incomingPriority =
+      statusPriority[message.status] ?? 0;
+
+    const status =
+      incomingPriority >= existingPriority
+        ? message.status
+        : existing.status;
+
+    map.set(key, {
+      ...existing,
+      ...message,
+
+      status,
+
+      createdAt:
+        existing.createdAt || message.createdAt,
+
+      deliveredAt:
+        message.deliveredAt || existing.deliveredAt,
+
+      readAt:
+        message.readAt || existing.readAt,
+    });
   });
 
   return Array.from(map.values()).sort(
@@ -157,6 +185,7 @@ const mergeMessages = (current, incoming) => {
       new Date(b.createdAt).getTime()
   );
 };
+
 
 
 // ============================================
@@ -352,101 +381,58 @@ export default function ChatWindow({
   // LOAD LOCAL CHAT
   // ==========================================
 
-  useEffect(
-    () => {
 
-      let cancelled =
-        false;
+useEffect(() => {
+  let cancelled = false;
 
+  const loadLocal = async () => {
+    if (!currentUserIdString || !selectedUserIdString) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
 
-      const loadLocal =
-        async () => {
+    // Clear the previous conversation immediately.
+    setMessages([]);
+    setLoading(true);
 
-          if (
-            !currentUserId ||
-            !selectedUserId
-          ) {
+    try {
+      await ChatStorage.initialize();
 
-            setMessages([]);
+      const localMessages = await ChatStorage.getMessages(
+        currentUserIdString,
+        selectedUserIdString
+      );
 
-            setLoading(false);
+      if (cancelled) return;
 
-            return;
-          }
+      // Merge instead of replacing messages.
+      setMessages((previous) =>
+        mergeMessages(previous, localMessages)
+      );
 
+    } catch (error) {
+      console.error(
+        "Local chat loading failed:",
+        error
+      );
+    } finally {
+      if (!cancelled) {
+        setLoading(false);
+      }
+    }
+  };
 
-          setLoading(true);
+  loadLocal();
 
+  return () => {
+    cancelled = true;
+  };
 
-          try {
-
-            await ChatStorage.initialize();
-
-
-            const localMessages =
-              await ChatStorage.getMessages(
-                currentUserIdString,
-                selectedUserIdString
-              );
-
-
-            if (
-              cancelled
-            ) {
-
-              return;
-
-            }
-
-
-            setMessages(
-              localMessages.map(
-                normalizeMessage
-              )
-            );
-
-          } catch (
-            error
-          ) {
-
-            console.error(
-              "❌ Local chat load failed:",
-              error
-            );
-
-          } finally {
-
-            if (
-              !cancelled
-            ) {
-
-              setLoading(false);
-
-            }
-
-          }
-
-        };
-
-
-      loadLocal();
-
-
-      return () => {
-
-        cancelled =
-          true;
-
-      };
-
-    },
-    [
-      currentUserIdString,
-      selectedUserIdString,
-      currentUserId,
-      selectedUserId,
-    ]
-  );
+}, [
+  currentUserIdString,
+  selectedUserIdString,
+]);
 
 
 // ==========================================
@@ -1025,15 +1011,19 @@ useEffect(() => {
               selectedUserId
             ) {
 
-              const result =
-                await syncChat({
-                  ownerId:
-                    currentUserId,
+              const result = await syncChat({
+                ownerId: currentUserIdString,
+                otherUserId: selectedUserIdString,
+              });
 
-                  otherUserId:
-                    selectedUserId,
-                });
+              const localMessages = await ChatStorage.getMessages(
+                currentUserIdString,
+                selectedUserIdString
+              );
 
+              setMessages((previous) =>
+                mergeMessages(previous, localMessages)
+              );
 
               if (
                 result?.messages?.length
